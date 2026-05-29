@@ -1,0 +1,24 @@
+flask>=2.3
+flask-cors
+python-dotenv
+requests
+psutil
+
+# Optional — install for full Network Analyzer features:
+# pip install scapy          # packet capture + ARP scan
+# pip install python-nmap    # port scanning (also needs nmap binary from nmap.org)
+# pip install dnspython      # full DNS record lookup
+# pywin32; sys_platform == "win32"  # Windows event log reading
+
+
+mss          # Fast screenshots for Windows login failure capture
+Pillow       # Image processing (screenshot fallback)
+reportlab
+
+# ── RAG Service (services/rag_service.py) ────────────────────────────────────
+# REQUIRED for basic TF-IDF vector store (no extra install needed — uses stdlib)
+# OPTIONAL for high-quality semantic embeddings:
+#   pip install faiss-cpu sentence-transformers
+#
+# faiss-cpu           # High-performance vector similarity search
+# sentence-transformers  # Pre-trained embedding model (all-MiniLM-L6-v2, ~80MB)
