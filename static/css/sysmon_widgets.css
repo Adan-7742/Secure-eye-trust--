@@ -1,0 +1,330 @@
+/*
+ * static/css/sysmon_widgets.css
+ * ==============================
+ * Sysmon v2 Dashboard Widget Styles — Secure Eye Trust+
+ *
+ * Uses CSS custom properties so it inherits the app's existing colour theme.
+ * All classes are namespaced with  .sysmon-  to avoid collisions.
+ *
+ * USAGE: add to index.html <head>:
+ *   <link rel="stylesheet" href="/static/css/sysmon_widgets.css">
+ */
+
+/* ── Fallback tokens (active when host app doesn't define them) ────────────── */
+:root {
+  --sysmon-bg:          var(--card-bg,        #1a1d23);
+  --sysmon-border:      var(--border-color,   #2e3240);
+  --sysmon-text:        var(--text-primary,   #e2e8f0);
+  --sysmon-text-dim:    var(--text-secondary, #8892a4);
+  --sysmon-danger:      var(--danger,         #ef4444);
+  --sysmon-warn:        var(--warning,        #f59e0b);
+  --sysmon-ok:          var(--success,        #22c55e);
+  --sysmon-info:        var(--info,           #3b82f6);
+  --sysmon-accent:      var(--accent,         #6366f1);
+  --sysmon-radius:      var(--radius,         8px);
+  --sysmon-font-mono:   'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --sysmon-font-ui:     var(--font-ui,        system-ui, -apple-system, sans-serif);
+  --sysmon-row-hover:   rgba(255,255,255,0.04);
+  --sysmon-danger-bg:   rgba(239, 68, 68,  0.08);
+  --sysmon-warn-bg:     rgba(245,158, 11,  0.08);
+}
+
+/* ── Widget wrapper ──────────────────────────────────────────────────────────── */
+
+[id^="sysmon-"] {
+  background:    var(--sysmon-bg);
+  border:        1px solid var(--sysmon-border);
+  border-radius: var(--sysmon-radius);
+  overflow:      hidden;
+  font-family:   var(--sysmon-font-ui);
+  font-size:     13px;
+  color:         var(--sysmon-text);
+  margin-bottom: 16px;
+}
+
+/* ── Widget header ───────────────────────────────────────────────────────────── */
+
+.sysmon-widget-header {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  padding:         10px 14px;
+  border-bottom:   1px solid var(--sysmon-border);
+  background:      rgba(255,255,255,0.02);
+}
+
+.sysmon-widget-header--alert {
+  border-left: 3px solid var(--sysmon-danger);
+  background:  var(--sysmon-danger-bg);
+}
+
+.sysmon-widget-title {
+  font-weight: 600;
+  font-size:   13px;
+  letter-spacing: 0.02em;
+}
+
+.sysmon-count {
+  font-size:  12px;
+  color:      var(--sysmon-text-dim);
+}
+
+.sysmon-danger-count {
+  color:      var(--sysmon-danger);
+  font-weight: 600;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────────────── */
+
+.sysmon-table {
+  width:           100%;
+  border-collapse: collapse;
+  font-size:       12px;
+}
+
+.sysmon-table thead tr {
+  background: rgba(255,255,255,0.03);
+}
+
+.sysmon-table th {
+  padding:     7px 12px;
+  text-align:  left;
+  font-weight: 600;
+  font-size:   11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color:       var(--sysmon-text-dim);
+  border-bottom: 1px solid var(--sysmon-border);
+  white-space:   nowrap;
+}
+
+.sysmon-table td {
+  padding:     7px 12px;
+  border-bottom: 1px solid var(--sysmon-border);
+  vertical-align: middle;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sysmon-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.sysmon-table tbody tr:hover {
+  background: var(--sysmon-row-hover);
+}
+
+.sysmon-row--danger {
+  background: var(--sysmon-danger-bg) !important;
+}
+
+.sysmon-row--warn {
+  background: var(--sysmon-warn-bg) !important;
+}
+
+/* ── Monospace cells ─────────────────────────────────────────────────────────── */
+
+.sysmon-mono {
+  font-family: var(--sysmon-font-mono);
+  font-size:   11px;
+}
+
+.sysmon-dim {
+  color: var(--sysmon-text-dim);
+}
+
+.sysmon-ts {
+  color:       var(--sysmon-text-dim);
+  font-size:   11px;
+  white-space: nowrap;
+}
+
+.sysmon-cmd {
+  color:     var(--sysmon-text-dim);
+  font-size: 11px;
+}
+
+.sysmon-regkey {
+  font-size: 10.5px;
+}
+
+.sysmon-count-cell {
+  text-align:  right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────────────── */
+
+.sysmon-badge {
+  display:       inline-block;
+  padding:       2px 7px;
+  border-radius: 99px;
+  font-size:     10px;
+  font-weight:   700;
+  letter-spacing: 0.04em;
+  white-space:   nowrap;
+}
+
+.sysmon-badge--danger {
+  background: rgba(239, 68, 68, 0.18);
+  color:      var(--sysmon-danger);
+  border:     1px solid rgba(239, 68, 68, 0.35);
+}
+
+.sysmon-badge--warn {
+  background: rgba(245,158,11, 0.15);
+  color:      var(--sysmon-warn);
+  border:     1px solid rgba(245,158,11, 0.3);
+}
+
+.sysmon-badge--ok {
+  background: rgba(34,197,94, 0.12);
+  color:      var(--sysmon-ok);
+  border:     1px solid rgba(34,197,94, 0.25);
+}
+
+.sysmon-badge--info {
+  background: rgba(59,130,246, 0.12);
+  color:      var(--sysmon-info);
+  border:     1px solid rgba(59,130,246, 0.25);
+}
+
+/* ── States ──────────────────────────────────────────────────────────────────── */
+
+.sysmon-loading {
+  padding: 20px 14px;
+  color:   var(--sysmon-text-dim);
+  font-size: 12px;
+  text-align: center;
+  animation: sysmon-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes sysmon-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+.sysmon-empty {
+  padding:    18px 14px;
+  color:      var(--sysmon-ok);
+  font-size:  12px;
+  text-align: center;
+}
+
+.sysmon-error {
+  padding:    14px;
+  color:      var(--sysmon-danger);
+  font-size:  12px;
+  text-align: center;
+  background: var(--sysmon-danger-bg);
+}
+
+.sysmon-notice {
+  padding:    14px;
+  color:      var(--sysmon-warn);
+  font-size:  12px;
+  line-height: 1.6;
+  background: var(--sysmon-warn-bg);
+  border-left: 3px solid var(--sysmon-warn);
+}
+
+.sysmon-notice code {
+  font-family: var(--sysmon-font-mono);
+  font-size:   11px;
+  background:  rgba(0,0,0,0.2);
+  padding:     1px 5px;
+  border-radius: 3px;
+}
+
+.sysmon-notice a {
+  color: var(--sysmon-info);
+  text-decoration: underline;
+}
+
+/* ── Bar chart (Risk Timeline) ───────────────────────────────────────────────── */
+
+.sysmon-bar-chart {
+  padding: 12px 14px;
+}
+
+.sysmon-bar-row {
+  display:        grid;
+  grid-template-columns: 180px 1fr 52px;
+  align-items:    center;
+  gap:            10px;
+  margin-bottom:  8px;
+}
+
+.sysmon-bar-label {
+  font-size: 11px;
+  color:     var(--sysmon-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sysmon-bar-track {
+  height:        14px;
+  background:    rgba(255,255,255,0.06);
+  border-radius: 99px;
+  overflow:      hidden;
+}
+
+.sysmon-bar-fill {
+  height:        100%;
+  border-radius: 99px;
+  transition:    width 0.5s ease;
+  min-width:     2px;
+}
+
+.sysmon-bar-count {
+  font-size:  11px;
+  text-align: right;
+  color:      var(--sysmon-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Stats bar chips (compact header strip) ──────────────────────────────────── */
+
+#sysmon-stats-bar {
+  display:     flex;
+  flex-wrap:   wrap;
+  gap:         6px;
+  padding:     6px 10px;
+  background:  transparent;
+  border:      none;
+  border-radius: 0;
+  margin-bottom: 0;
+}
+
+.sysmon-stats-chip {
+  display:       inline-flex;
+  align-items:   center;
+  gap:           4px;
+  padding:       3px 9px;
+  border-radius: 99px;
+  font-size:     11px;
+  font-weight:   600;
+  white-space:   nowrap;
+}
+
+.sysmon-stats-chip--normal {
+  background: rgba(255,255,255,0.07);
+  color:      var(--sysmon-text-dim);
+  border:     1px solid var(--sysmon-border);
+}
+
+.sysmon-stats-chip--danger {
+  background: rgba(239, 68, 68, 0.15);
+  color:      var(--sysmon-danger);
+  border:     1px solid rgba(239, 68, 68, 0.35);
+}
+
+.sysmon-stats-chip--warn {
+  background: rgba(245,158,11, 0.13);
+  color:      var(--sysmon-warn);
+  border:     1px solid rgba(245,158,11, 0.3);
+}

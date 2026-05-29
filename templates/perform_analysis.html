@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Eye Trust+ — Perform Analysis</title>
+<link rel="stylesheet" href="/static/css/perform_analysis.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="shield">🛡</div>
+    Secure Eye Trust+
+    <span class="topbar-section">/ Perform Analysis</span>
+  </div>
+
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="location.href='/perform-analysis-page'">🔬 Technical View</button>
+    <button class="tab-btn" onclick="location.href='/plain-report'">📋 Plain Report</button>
+  </div>
+
+  <div class="topbar-right">
+    <div class="badge-live">MONITOR</div>
+    <div class="topbar-host" id="tbar-host">—</div>
+    <div class="topbar-time" id="tbar-time"></div>
+  </div>
+</header>
+
+<div class="main-wrap">
+
+  <!-- ── SIDEBAR ── -->
+  <nav class="sidebar">
+    <div class="sidebar-section">Navigation</div>
+    <div class="sidebar-item" onclick="location.href='/'">
+      <span class="sidebar-icon">◻</span> Dashboard
+    </div>
+    <div class="sidebar-item active">
+      <span class="sidebar-icon">⬡</span> Perform Analysis
+    </div>
+    <div class="sidebar-item" onclick="location.href='/logs'">
+      <span class="sidebar-icon">≡</span> Log Explorer
+    </div>
+    <div class="sidebar-item" onclick="location.href='/reports'">
+      <span class="sidebar-icon">▤</span> Reports
+    </div>
+    <div class="sidebar-item" onclick="location.href='/alerts'">
+      <span class="sidebar-icon">⚑</span> Alerts
+      <span class="sidebar-count red" id="sb-alert-count">—</span>
+    </div>
+
+    <div class="sidebar-section">Sections</div>
+    <div class="sidebar-item" onclick="scrollTo('threat-section')">
+      <span class="sidebar-icon">⦿</span> Threats
+      <span class="sidebar-count" id="sb-threat-count">—</span>
+    </div>
+    <div class="sidebar-item" onclick="scrollTo('anomaly-section')">
+      <span class="sidebar-icon">△</span> Anomalies
+      <span class="sidebar-count" id="sb-anom-count">—</span>
+    </div>
+    <div class="sidebar-item" onclick="scrollTo('chain-section')">
+      <span class="sidebar-icon">⛓</span> Attack Chains
+      <span class="sidebar-count red" id="sb-chain-count">—</span>
+    </div>
+    <div class="sidebar-item" onclick="scrollTo('ai-section')">
+      <span class="sidebar-icon">✦</span> AI Insights
+    </div>
+    <div class="sidebar-section">Export</div>
+    <div class="sidebar-item" onclick="exportReport('pdf')"><span class="sidebar-icon">⇩</span> PDF</div>
+    <div class="sidebar-item" onclick="exportReport('html')"><span class="sidebar-icon">⇩</span> HTML</div>
+    <div class="sidebar-item" onclick="exportReport('json')"><span class="sidebar-icon">⇩</span> JSON</div>
+    <div class="sidebar-item" onclick="exportReport('csv')"><span class="sidebar-icon">⇩</span> CSV</div>
+
+    <div style="flex:1"></div>
+    <div class="sidebar-section">Auto-Schedule</div>
+    <div style="padding:8px 16px">
+      <div style="font-size:10px;color:var(--text-3)">Next auto-run</div>
+      <div style="font-size:11px;color:var(--accent);margin-top:3px" id="sb-next">—</div>
+    </div>
+  </nav>
+
+  <!-- ── CONTENT ── -->
+  <main class="content">
+
+    <!-- Control bar -->
+    <div class="control-bar">
+      <label class="ctrl-label">Period</label>
+      <select class="ctrl-select" id="period-select">
+        <option value="7">Last 7 days</option>
+        <option value="14">Last 14 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="60">Last 60 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+      <div class="ctrl-divider"></div>
+      <button class="run-btn" id="run-btn" onclick="runAnalysis()">
+        <div class="spinner"></div>
+        <span class="btn-txt">▶ Run Deep Analysis</span>
+      </button>
+      <button class="run-btn secondary" id="load-btn" onclick="loadLatest()">
+        ↺ Load Latest
+      </button>
+      <div class="ctrl-spacer"></div>
+      <div class="ctrl-tag" id="ctrl-generated">Not run yet</div>
+      <div class="ctrl-tag" id="ctrl-period-tag">—</div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="chart-card">
+      <div class="empty-state">
+        <div class="empty-icon">⬡</div>
+        <div class="empty-title">No Analysis Report</div>
+        <div class="empty-sub">Click "Run Deep Analysis" to start a comprehensive security scan of all Windows event logs.</div>
+      </div>
+    </div>
+
+    <!-- ── REPORT (hidden until data) ── -->
+    <div id="report-wrap" style="display:none">
+
+      <!-- Risk Hero -->
+      <div class="risk-hero" id="risk-hero">
+        <div class="risk-hero-left">
+          <div class="risk-label-row">
+            <div class="risk-label" id="risk-label">Normal</div>
+            <div class="risk-badge-pill" id="risk-badge">SCORE: 0/100</div>
+          </div>
+          <div class="risk-message" id="risk-message">—</div>
+          <div class="risk-meta" id="risk-meta">—</div>
+          <div class="tag-row" id="risk-tags"></div>
+        </div>
+        <div class="risk-gauge-wrap">
+          <div class="risk-gauge">
+            <canvas id="gauge-chart" width="90" height="90"></canvas>
+            <div class="risk-gauge-num" id="gauge-num">0</div>
+          </div>
+          <div class="risk-gauge-lbl">RISK SCORE</div>
+        </div>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="stat-grid">
+        <div class="stat-card" style="--stat-color:var(--text-2)">
+          <div class="stat-lbl">Total Events</div>
+          <div class="stat-val" id="s-total">—</div>
+        </div>
+        <div class="stat-card" style="--stat-color:var(--red)">
+          <div class="stat-lbl">Critical</div>
+          <div class="stat-val" id="s-critical">—</div>
+        </div>
+        <div class="stat-card" style="--stat-color:var(--orange)">
+          <div class="stat-lbl">Errors</div>
+          <div class="stat-val" id="s-errors">—</div>
+        </div>
+        <div class="stat-card" style="--stat-color:var(--yellow)">
+          <div class="stat-lbl">Warnings</div>
+          <div class="stat-val" id="s-warnings">—</div>
+        </div>
+        <div class="stat-card" style="--stat-color:var(--purple)">
+          <div class="stat-lbl">Threat Types</div>
+          <div class="stat-val" id="s-threats">—</div>
+        </div>
+        <div class="stat-card" style="--stat-color:var(--accent)">
+          <div class="stat-lbl">Confidence</div>
+          <div class="stat-val" id="s-confidence">—</div>
+        </div>
+      </div>
+
+      <!-- Timeline + Hourly -->
+      <div class="chart-row chart-row-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title">Log Volume — Timeline</div>
+              <div class="chart-card-sub">Daily event count · orange = anomaly spike</div>
+            </div>
+            <div class="chart-tag">TIME SERIES</div>
+          </div>
+          <div class="chart-wrap" style="height:180px">
+            <canvas id="pa-chart-timeline"></canvas>
+          </div>
+          <div class="legend" id="timeline-legend"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title">Hourly Activity Pattern</div>
+              <div class="chart-card-sub">Peak hour: <span id="peak-hour-lbl" style="color:var(--accent)">—</span></div>
+            </div>
+            <div class="chart-tag">FREQUENCY</div>
+          </div>
+          <div class="chart-wrap" style="height:180px">
+            <canvas id="pa-chart-hourly"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Failed Logins -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-card-title">🔐 Failed Login Attempts — Hourly</div>
+            <div class="chart-card-sub">Event ID 4625 · Brute-force threshold: 5/hour</div>
+          </div>
+          <div class="chart-tag">SECURITY</div>
+        </div>
+        <div class="chart-wrap" style="height:180px">
+          <canvas id="pa-chart-failed-logins"></canvas>
+        </div>
+        <div id="pa-failed-logins-empty" style="display:none;text-align:center;padding:40px;color:var(--text-muted);font-size:13px">
+          No failed login events (EID 4625) detected in this log file.
+        </div>
+      </div>
+
+      <!-- Distribution + Weekday + Severity -->
+      <div class="chart-row chart-row-3">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title">Event Distribution</div>
+              <div class="chart-card-sub">By log category</div>
+            </div>
+            <div class="chart-tag">DONUT</div>
+          </div>
+          <div class="chart-wrap" style="height:160px">
+            <canvas id="pa-chart-cats"></canvas>
+          </div>
+          <div class="legend" id="dist-legend"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title">Weekday Pattern</div>
+              <div class="chart-card-sub">Activity by day of week</div>
+            </div>
+            <div class="chart-tag">BAR</div>
+          </div>
+          <div class="chart-wrap" style="height:160px">
+            <canvas id="pa-chart-weekday"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div>
+              <div class="chart-card-title">Severity Breakdown</div>
+              <div class="chart-card-sub">Risk distribution</div>
+            </div>
+            <div class="chart-tag">DONUT</div>
+          </div>
+          <div class="chart-wrap" style="height:160px">
+            <canvas id="sev-chart"></canvas>
+          </div>
+          <div class="legend" id="sev-legend"></div>
+        </div>
+      </div>
+
+      <!-- Heatmap -->
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-card-title">Activity Heatmap — Day × Hour</div>
+            <div class="chart-card-sub">Hover cells for details · Brighter = more activity</div>
+          </div>
+          <div class="chart-tag">HEATMAP</div>
+        </div>
+        <div id="heatmap-container"></div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--bg-card)"></div>0 events</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(14,165,233,0.4)"></div>Low</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(245,158,11,0.6)"></div>Medium</div>
+          <div class="legend-item"><div class="legend-dot" style="background:rgba(239,68,68,0.85)"></div>High</div>
+        </div>
+      </div>
+
+      <!-- Sources + Categories -->
+      <div class="chart-row chart-row-2">
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div><div class="chart-card-title">Top Event Sources</div><div class="chart-card-sub">By error/failure volume</div></div>
+            <div class="chart-tag">RANKED</div>
+          </div>
+          <div class="chart-wrap" style="height:220px">
+            <canvas id="pa-chart-evtid"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <div><div class="chart-card-title">Category Health</div><div class="chart-card-sub">Error rate per log category</div></div>
+          </div>
+          <div class="cat-grid" id="cat-grid"></div>
+        </div>
+      </div>
+
+      <!-- Attack Chains -->
+      <div id="chain-section">
+        <div class="section-hdr"><div class="section-title">Attack Chain Correlations</div></div>
+        <div id="chain-container" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <!-- Threats Table -->
+      <div id="threat-section" class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-card-title">Threat Pattern Detections</div>
+            <div class="chart-card-sub">Smart frequency-gated detection with confidence scoring</div>
+          </div>
+          <div class="chart-tag" id="threat-count-tag">0 DETECTIONS</div>
+        </div>
+        <table class="threat-table">
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Threat</th>
+              <th>Count</th>
+              <th>Confidence</th>
+              <th>Last Seen</th>
+              <th>MITRE</th>
+              <th>Off-Hours</th>
+            </tr>
+          </thead>
+          <tbody id="threat-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Anomaly Days -->
+      <div id="anomaly-section" class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-card-title">Statistical Anomalies</div>
+            <div class="chart-card-sub">Days with Z-score &gt; 2.0 — statistically unusual volume</div>
+          </div>
+          <div class="chart-tag">Z-SCORE</div>
+        </div>
+        <div class="anomaly-list" id="anomaly-list"></div>
+      </div>
+
+      <!-- AI Insights -->
+      <div id="ai-section" class="chart-card">
+        <div class="chart-card-header">
+          <div>
+            <div class="chart-card-title">AI Intelligence Layer</div>
+            <div class="chart-card-sub">Machine-generated insights from live log data</div>
+          </div>
+          <button class="run-btn" id="ai-btn" style="font-size:11px;padding:6px 14px" onclick="fetchAiInsights()">
+            <div class="spinner"></div>
+            <span class="btn-txt">✦ Generate Insights</span>
+          </button>
+        </div>
+        <div class="ai-insights-grid" id="ai-grid">
+          <div class="ai-insight-card" id="ai-overview">
+            <div class="ai-insight-label">System Overview</div>
+            <div class="ai-text">Click "Generate Insights" for AI analysis of this report.</div>
+          </div>
+          <div class="ai-insight-card" id="ai-threats">
+            <div class="ai-insight-label">Threat Analysis</div>
+            <div class="ai-text">AI interpretation of detected threat patterns.</div>
+          </div>
+          <div class="ai-insight-card" id="ai-timeline">
+            <div class="ai-insight-label">Trend Analysis</div>
+            <div class="ai-text">AI reading of the 30-day event trend.</div>
+          </div>
+          <div class="ai-insight-card" id="ai-anomalies">
+            <div class="ai-insight-label">Anomaly Context</div>
+            <div class="ai-text">AI cross-referencing spikes with threats.</div>
+          </div>
+          <div class="ai-insight-card" id="ai-hourly">
+            <div class="ai-insight-label">Behavioral Pattern</div>
+            <div class="ai-text">AI assessment of temporal and hourly patterns.</div>
+          </div>
+        </div>
+      </div>
+       <!-- Zero-Day Heuristics -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header"><div class="panel-title">🔎 Zero-Day Heuristics</div></div>
+          <div id="fa-zeroday-ai-summary" style="display:none;padding:12px 16px 0 16px;font-size:12px;line-height:1.75;color:#94a3b8;border-bottom:1px solid var(--border)"></div>
+          <div class="panel-body" id="zeroday-results"></div>
+        </div>
+
+        <!-- Security Threat Classification -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header"><div class="panel-title">🔒 Security Threat Classification</div></div>
+          <div class="panel-body" id="secthreats-results"></div>
+        </div>
+
+        <!-- Top Offenders -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header"><div class="panel-title">🏆 Top Offending Sources</div></div>
+          <div id="fa-offender-ai-insight" style="display:none;padding:12px 16px 0 16px;font-size:12px;line-height:1.75;color:#94a3b8;border-bottom:1px solid var(--border)"></div>
+          <div class="panel-body" id="offenders-results"></div>
+        </div>
+
+      </div>
+    </div>
+
+
+      <!-- Score Breakdown + Export -->
+      <div class="chart-row chart-row-2">
+        <div class="chart-card">
+          <div class="chart-card-header"><div><div class="chart-card-title">Risk Score Breakdown</div></div></div>
+          <div class="score-breakdown" id="score-breakdown"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-header"><div><div class="chart-card-title">Schedule & Export</div></div></div>
+          <div class="next-check-row" id="next-check-row">
+            <div class="next-check-icon">⏱</div>
+            <div>
+              <div class="next-check-time" id="next-check-time">—</div>
+              <div class="next-check-msg">Next scheduled analysis</div>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="section-title" style="margin-bottom:8px">Export Report</div>
+            <div class="export-row" id="export-row"></div>
+          </div>
+          <div style="margin-top:14px">
+            <div class="section-title" style="margin-bottom:8px">Analysis History</div>
+            <div class="history-list" id="history-list"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /report-wrap -->
+  </main>
+</div>
+
+<script src="/static/js/perform_analysis.js"></script>
+</body>
+</html>

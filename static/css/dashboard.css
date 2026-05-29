@@ -1,0 +1,190 @@
+/* static/css/dashboard.css
+   Dashboard overview, stat cards, charts
+   ======================================== */
+
+.page-content {
+  padding: 20px;
+  max-width: 1400px;
+}
+
+/* ── Overview grid ── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+
+.stat-card.app::before  { background: var(--accent2); }
+.stat-card.sys::before  { background: var(--green); }
+.stat-card.sec::before  { background: var(--red); }
+.stat-card.upd::before  { background: var(--yellow); }
+
+.stat-card:hover { transform: translateY(-1px); }
+
+.stat-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-bright);
+  font-family: var(--mono);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stat-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+
+.stat-errors { color: var(--red); }
+.stat-rate   { color: var(--text-dim); font-family: var(--mono); }
+
+/* ── Charts grid ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .charts-grid { grid-template-columns: 1fr; }
+}
+
+.chart-wrap {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.chart-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+canvas {
+  max-width: 100%;
+}
+
+/* ── Fetch button area ── */
+.fetch-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  flex-wrap: wrap;
+}
+
+.fetch-status {
+  font-size: 12px;
+  color: var(--text-dim);
+  flex: 1;
+  font-family: var(--mono);
+}
+
+/* ── Activity feed ── */
+.activity-feed {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.activity-feed-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  letter-spacing: .5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.activity-feed-body {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(30,37,48,0.5);
+  font-size: 11px;
+  transition: background var(--transition);
+}
+
+.activity-item:hover { background: rgba(255,255,255,0.02); }
+
+.activity-type {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.activity-type.fetch    { background: rgba(100,255,204,0.1); color: var(--accent); }
+.activity-type.analysis { background: rgba(77,142,255,0.1);  color: var(--blue); }
+.activity-type.chat     { background: rgba(255,209,102,0.1); color: var(--yellow); }
+.activity-type.upload   { background: rgba(6,214,160,0.1);   color: var(--green); }
+.activity-type.clear    { background: rgba(255,77,106,0.1);  color: var(--red); }
+
+.activity-details { color: var(--text); flex: 1; }
+.activity-time    { color: var(--text-dim); flex-shrink: 0; font-family: var(--mono); }
+
+/* ── Live dot indicator ── */
+.live-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .5; transform: scale(.8); }
+}

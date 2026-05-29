@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Eye Trust+ — Plain Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #f0f4f8;
+    --bg-card:   #ffffff;
+    --bg-panel:  #f8fafc;
+    --border:    #e2e8f0;
+    --text-1:    #0f172a;
+    --text-2:    #475569;
+    --text-3:    #94a3b8;
+    --accent:    #2563eb;
+    --green:     #16a34a;
+    --red:       #dc2626;
+    --orange:    #ea580c;
+    --yellow:    #d97706;
+    --purple:    #7c3aed;
+    --font:      'Plus Jakarta Sans', sans-serif;
+    --mono:      'DM Mono', monospace;
+    --radius:    12px;
+    --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-lg: 0 4px 16px rgba(0,0,0,0.10);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text-1);
+    font-size: 14px;
+    line-height: 1.65;
+    min-height: 100vh;
+  }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: #0f172a;
+    padding: 0 28px;
+    height: 54px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-brand {
+    font-size: 15px; font-weight: 800;
+    color: #fff;
+    display: flex; align-items: center; gap: 10px;
+    letter-spacing: -0.02em;
+  }
+  .topbar-brand .shield {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .tab-nav {
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 8px;
+    padding: 4px;
+  }
+  .tab-btn {
+    font-family: var(--font);
+    font-size: 12px; font-weight: 600;
+    color: rgba(255,255,255,0.55);
+    background: transparent;
+    border: none; cursor: pointer;
+    padding: 6px 14px; border-radius: 6px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .tab-btn.active { background: #fff; color: #0f172a; }
+  .tab-btn:hover:not(.active) { color: #fff; background: rgba(255,255,255,0.12); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .run-btn {
+    font-family: var(--font);
+    font-size: 12px; font-weight: 700;
+    background: #2563eb;
+    color: #fff;
+    border: none; cursor: pointer;
+    padding: 7px 18px; border-radius: 7px;
+    display: flex; align-items: center; gap: 7px;
+    transition: opacity 0.15s;
+  }
+  .run-btn:hover { opacity: 0.88; }
+  .run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .run-btn .spinner {
+    width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .run-btn.loading .spinner { display: block; }
+  .run-btn.loading .btn-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── LAYOUT ── */
+  .page { max-width: 900px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* ── LOADING / EMPTY ── */
+  .state-card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    padding: 64px 32px;
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 14px;
+  }
+  .state-icon { font-size: 48px; }
+  .state-title { font-size: 20px; font-weight: 800; color: var(--text-1); }
+  .state-sub { font-size: 14px; color: var(--text-2); max-width: 360px; line-height: 1.6; }
+
+  /* ── RISK HERO ── */
+  .risk-hero {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
+    padding: 28px;
+    margin-bottom: 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 24px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .risk-hero::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    background: var(--risk-color, var(--green));
+  }
+  .risk-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700;
+    padding: 6px 16px; border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  .risk-title {
+    font-size: 28px; font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+  .risk-summary-line {
+    font-size: 15px; color: var(--text-2); line-height: 1.55;
+  }
+  .risk-meta {
+    font-size: 12px; color: var(--text-3);
+    margin-top: 12px;
+    font-family: var(--mono);
+  }
+  .risk-score-circle {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    border: 5px solid;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .risk-score-num { font-size: 28px; font-weight: 800; line-height: 1; }
+  .risk-score-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-3); margin-top: 3px; }
+
+  /* ── SECTION ── */
+  .section-wrap { display: flex; flex-direction: column; gap: 16px; }
+  .card {
+    background: var(--bg-card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .card-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-panel);
+  }
+  .card-icon { font-size: 20px; }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--text-1); }
+  .card-sub { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+  .card-body { padding: 18px 20px; }
+
+  /* ── FINDINGS ── */
+  .finding-list { display: flex; flex-direction: column; gap: 10px; }
+  .finding-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 14px;
+    background: var(--bg-panel);
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    font-size: 14px; color: var(--text-2);
+    line-height: 1.6;
+  }
+  .finding-item .fi-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+
+  /* ── THREATS ── */
+  .threat-list { display: flex; flex-direction: column; gap: 10px; }
+  .threat-card {
+    border-radius: 10px;
+    border: 1px solid;
+    padding: 14px 16px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .threat-card.sev-CRITICAL { border-color: rgba(220,38,38,0.25); background: rgba(220,38,38,0.04); }
+  .threat-card.sev-HIGH     { border-color: rgba(234,88,12,0.25);  background: rgba(234,88,12,0.04); }
+  .threat-card.sev-MEDIUM   { border-color: rgba(217,119,6,0.25);  background: rgba(217,119,6,0.04); }
+  .threat-card.sev-LOW      { border-color: rgba(22,163,74,0.25);  background: rgba(22,163,74,0.04); }
+  .threat-header { display: flex; align-items: center; gap: 10px; }
+  .threat-icon { font-size: 22px; }
+  .threat-name { font-size: 14px; font-weight: 700; color: var(--text-1); }
+  .threat-sev-badge {
+    margin-left: auto;
+    font-size: 10px; font-weight: 800;
+    padding: 3px 10px; border-radius: 3px;
+    letter-spacing: 0.07em;
+  }
+  .threat-sev-badge.CRITICAL { background: rgba(220,38,38,0.1); color: var(--red); }
+  .threat-sev-badge.HIGH     { background: rgba(234,88,12,0.1);  color: var(--orange); }
+  .threat-sev-badge.MEDIUM   { background: rgba(217,119,6,0.1);  color: var(--yellow); }
+  .threat-sev-badge.LOW      { background: rgba(22,163,74,0.1);  color: var(--green); }
+  .threat-plain { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+  .threat-meta {
+    display: flex; gap: 16px;
+    font-size: 12px; color: var(--text-3);
+    flex-wrap: wrap;
+  }
+  .threat-meta span { font-weight: 600; color: var(--text-2); }
+
+  /* ── ACTIONS ── */
+  .action-list { display: flex; flex-direction: column; gap: 8px; }
+  .action-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 16px;
+    border-radius: 9px;
+    border-left: 3px solid;
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-card);
+  }
+  .action-item.CRITICAL { border-left-color: var(--red);    background: rgba(220,38,38,0.03); }
+  .action-item.HIGH     { border-left-color: var(--orange); background: rgba(234,88,12,0.03); }
+  .action-item.MEDIUM   { border-left-color: var(--yellow); background: rgba(217,119,6,0.03); }
+  .action-item.LOW      { border-left-color: var(--green);  background: rgba(22,163,74,0.03); }
+  .action-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .action-priority {
+    font-size: 10px; font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    min-width: 64px;
+    margin-top: 2px;
+  }
+  .action-priority.CRITICAL { color: var(--red); }
+  .action-priority.HIGH     { color: var(--orange); }
+  .action-priority.MEDIUM   { color: var(--yellow); }
+  .action-priority.LOW      { color: var(--green); }
+  .action-text { font-size: 13px; color: var(--text-2); line-height: 1.55; }
+
+  /* ── HIGHLIGHTS ── */
+  .highlight-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .highlight-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 14px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    font-size: 13px; color: var(--text-2);
+    line-height: 1.55;
+  }
+  .highlight-dot { flex-shrink: 0; margin-top: 3px; font-size: 16px; }
+
+  /* ── STATS SUMMARY ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+  .stat-cell {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .stat-cell-val {
+    font-size: 26px; font-weight: 800;
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+  .stat-cell-lbl {
+    font-size: 11px; color: var(--text-3);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── EXPLAIN TOOLTIP ── */
+  .explain-trigger {
+    display: inline;
+    cursor: pointer;
+    border-bottom: 1px dashed var(--text-3);
+    font-size: inherit;
+    color: inherit;
+    background: none; border-top: none; border-left: none; border-right: none;
+    padding: 0; font-family: inherit;
+  }
+  .explain-trigger:hover { color: var(--accent); border-color: var(--accent); }
+  .explain-popup {
+    position: fixed;
+    z-index: 999;
+    max-width: 320px;
+    background: #0f172a;
+    color: #e2e8f0;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 14px 16px;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: none;
+    pointer-events: none;
+  }
+  .explain-popup.visible { display: block; }
+  .explain-popup-title { font-weight: 700; color: #fff; margin-bottom: 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; }
+
+  /* ── NEXT CHECK ── */
+  .next-check-bar {
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    border-radius: var(--radius);
+    padding: 16px 22px;
+    display: flex; align-items: center; gap: 14px;
+    color: #fff;
+  }
+  .next-check-icon { font-size: 22px; }
+  .next-check-time { font-size: 15px; font-weight: 700; }
+  .next-check-sub  { font-size: 12px; opacity: 0.8; }
+
+  /* ── GLOSSARY ── */
+  .glossary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .glossary-item {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px 14px;
+  }
+  .glossary-term { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .glossary-def  { font-size: 13px; color: var(--text-2); line-height: 1.55; }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-size: 11px; font-weight: 800;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: #fff; }
+    .topbar { display: none; }
+    .run-btn { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="shield">🛡</div>
+    Secure Eye Trust+
+    <span style="color:rgba(255,255,255,0.35);font-weight:400;font-size:13px">/ Security Report</span>
+  </div>
+
+  <div class="tab-nav">
+    <button class="tab-btn" onclick="location.href='/perform-analysis-page'">🔬 Technical View</button>
+    <button class="tab-btn active">📋 Plain Report</button>
+  </div>
+
+  <div class="topbar-right">
+    <button class="run-btn" id="refresh-btn" onclick="loadReport()">
+      <div class="spinner"></div>
+      <span class="btn-text">↺ Refresh</span>
+    </button>
+    <button class="run-btn" id="run-btn" onclick="runAndLoad()" style="background:#16a34a">
+      <div class="spinner"></div>
+      <span class="btn-text">▶ Run New Analysis</span>
+    </button>
+    <button class="run-btn" onclick="window.print()" style="background:rgba(255,255,255,0.1)">🖨 Print</button>
+  </div>
+</header>
+
+<div class="page" id="page-root">
+  <!-- Empty state -->
+  <div class="state-card" id="empty-state">
+    <div class="state-icon">📋</div>
+    <div class="state-title">No Report Yet</div>
+    <div class="state-sub">Click "Run New Analysis" above to generate your first plain-English security report.</div>
+  </div>
+</div>
+
+<!-- Explain popup -->
+<div class="explain-popup" id="explain-popup">
+  <div class="explain-popup-title" id="ep-title">—</div>
+  <div id="ep-body">—</div>
+</div>
+
+<script>
+// ── EXPLAIN SYSTEM ─────────────────────────────────────────────────────────
+const BUILT_IN_TERMS = {
+  "Z-score":             "A Z-score measures how unusual a day is. If your computer normally records 500 events/day, a day with 2,000 events gets a high Z-score — meaning it's very abnormal.",
+  "anomaly":             "An anomaly is something that doesn't fit the normal pattern — like your computer suddenly generating 10x more activity on a single day.",
+  "brute force":         "A brute force attack is when someone rapidly tries many different passwords hoping to guess the right one and break into the computer.",
+  "attack chain":        "An attack chain means multiple suspicious things happened in sequence — like someone guessing a password, then changing security settings, then accessing private files.",
+  "confidence":          "Confidence tells us how certain the system is. 90% confidence = very sure. 50% = might be a false alarm.",
+  "risk score":          "A number from 0 to 100 summarising safety. 0 = perfectly safe. 100 = serious danger right now.",
+  "event ID":            "A number Windows uses to label every type of activity. Example: Event ID 4625 always means 'failed login attempt'.",
+  "privilege escalation":"When someone or a program tries to gain more control over the computer than they're allowed — like a regular user becoming an administrator.",
+  "FIM":                 "File Integrity Monitoring watches important system files and alerts when they change — helpful for detecting viruses that modify system files.",
+  "error rate":          "The percentage of computer activities that resulted in errors. Below 5% is healthy. Above 20% means something is wrong.",
+};
+
+let activeExplain = null;
+
+function showExplain(term, el) {
+  const popup = document.getElementById('explain-popup');
+  document.getElementById('ep-title').textContent = term;
+  document.getElementById('ep-body').textContent = 'Looking up…';
+  popup.classList.add('visible');
+
+  const rect = el.getBoundingClientRect();
+  let top = rect.bottom + 8;
+  let left = rect.left;
+  if (left + 330 > window.innerWidth) left = window.innerWidth - 340;
+  if (top + 140 > window.innerHeight) top = rect.top - 150;
+  popup.style.top  = top + 'px';
+  popup.style.left = left + 'px';
+
+  if (BUILT_IN_TERMS[term]) {
+    document.getElementById('ep-body').textContent = BUILT_IN_TERMS[term];
+    return;
+  }
+  fetch('/perform-analysis/explain', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({term})
+  }).then(r => r.json()).then(d => {
+    if (d.ok) document.getElementById('ep-body').textContent = d.explanation;
+  }).catch(() => {
+    document.getElementById('ep-body').textContent = 'Could not load explanation right now.';
+  });
+}
+
+document.addEventListener('click', (e) => {
+  const popup = document.getElementById('explain-popup');
+  if (!e.target.classList.contains('explain-trigger')) {
+    popup.classList.remove('visible');
+  }
+});
+
+function T(term) {
+  return `<button class="explain-trigger" onclick="showExplain('${term}',this)">${term}</button>`;
+}
+
+// ── RISK COLORS ────────────────────────────────────────────────────────────
+const RISK_COLORS = {
+  Critical:   '#dc2626',
+  High:       '#ea580c',
+  Suspicious: '#d97706',
+  Medium:     '#d97706',
+  Normal:     '#16a34a',
+  Low:        '#16a34a',
+};
+
+function rColor(label) {
+  return RISK_COLORS[label] || '#16a34a';
+}
+
+// ── LOAD REPORT ────────────────────────────────────────────────────────────
+async function loadReport() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('loading'); btn.disabled = true;
+  try {
+    const resp = await fetch('/perform-analysis/plain-report');
+    const data = await resp.json();
+    if (data.ok && data.plain_report) {
+      renderPlain(data.plain_report);
+    } else {
+      showEmpty(data.error || 'No report found. Click "Run New Analysis" to generate one.');
+    }
+  } catch (e) {
+    showEmpty('Could not connect to the server. Please try again.');
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+async function runAndLoad() {
+  const btn = document.getElementById('run-btn');
+  btn.classList.add('loading'); btn.disabled = true;
+  try {
+    const resp = await fetch('/perform-analysis', {method: 'POST'});
+    const data = await resp.json();
+    if (data.ok) {
+      const resp2 = await fetch('/perform-analysis/plain-report');
+      const data2 = await resp2.json();
+      if (data2.ok && data2.plain_report) renderPlain(data2.plain_report);
+    } else {
+      alert('Analysis failed: ' + (data.error || 'Unknown error'));
+    }
+  } catch (e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+function showEmpty(msg) {
+  const root = document.getElementById('page-root');
+  root.innerHTML = `
+    <div class="state-card">
+      <div class="state-icon">📋</div>
+      <div class="state-title">No Report Available</div>
+      <div class="state-sub">${msg}</div>
+    </div>`;
+}
+
+// ── RENDER PLAIN REPORT ────────────────────────────────────────────────────
+function renderPlain(r) {
+  const root   = document.getElementById('page-root');
+  const rc     = rColor(r.risk_level);
+  const rcAlpha = rc + '1a';
+
+  let html = '';
+
+  // ── Risk Hero ──
+  html += `
+  <div class="risk-hero" style="--risk-color:${rc}; margin-bottom:20px">
+    <div>
+      <div class="risk-badge" style="background:${rcAlpha};color:${rc}">
+        ${r.risk_icon} ${r.risk_level} Risk
+      </div>
+      <div class="risk-title" style="color:${rc}">${r.summary_line}</div>
+      <div class="risk-summary-line">${r.risk_simple_msg}</div>
+      <div class="risk-meta">
+        🖥 ${r.hostname} &nbsp;·&nbsp; 📅 Last ${r.period_days} days &nbsp;·&nbsp; 🕐 ${r.generated_at?.slice(0,16) || '—'}
+      </div>
+    </div>
+    <div>
+      <div class="risk-score-circle" style="border-color:${rc};color:${rc}">
+        <div class="risk-score-num">${r.risk_score}</div>
+        <div class="risk-score-lbl">/ 100</div>
+      </div>
+      <div style="font-size:10px;color:var(--text-3);text-align:center;margin-top:6px;text-transform:uppercase;letter-spacing:0.1em">Risk Score</div>
+    </div>
+  </div>`;
+
+  // ── Summary stats ──
+  html += `<div class="stats-row" style="margin-bottom:20px">
+    <div class="stat-cell">
+      <div class="stat-cell-val" style="color:var(--accent)">${fmt(r.total_events)}</div>
+      <div class="stat-cell-lbl">Records Checked</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-cell-val" style="color:${r.total_errors > 500 ? 'var(--red)' : 'var(--orange)'}">${fmt(r.total_errors)}</div>
+      <div class="stat-cell-lbl">Errors Found</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-cell-val" style="color:${r.threats_found > 0 ? 'var(--red)' : 'var(--green)'}">${r.threats_found}</div>
+      <div class="stat-cell-lbl">Security Issues</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-cell-val" style="color:${r.anomaly_days > 0 ? 'var(--orange)' : 'var(--green)'}">${r.anomaly_days}</div>
+      <div class="stat-cell-lbl">Unusual Days</div>
+    </div>
+  </div>`;
+
+  // ── What we analyzed ──
+  html += `<div class="section-label">1 — What We Checked</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div class="card-icon">🔍</div>
+      <div>
+        <div class="card-title">What We Analyzed</div>
+        <div class="card-sub">A summary of what the system looked at</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p style="font-size:14px;color:var(--text-2);line-height:1.65">${r.what_analyzed}</p>
+    </div>
+  </div>`;
+
+  // ── What we found ──
+  html += `<div class="section-label">2 — What We Found</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div class="card-icon">📊</div>
+      <div>
+        <div class="card-title">Key Findings</div>
+        <div class="card-sub">The most important things the scan discovered</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="finding-list">`;
+  const icons = ['📝','⚠️','🔒','🔗','📈','🕐'];
+  r.findings.forEach((f, i) => {
+    html += `<div class="finding-item">
+      <div class="fi-icon">${icons[i % icons.length]}</div>
+      <div>${f}</div>
+    </div>`;
+  });
+  html += `</div></div></div>`;
+
+  // ── Threat explanations ──
+  if (r.threat_explanations && r.threat_explanations.length > 0) {
+    html += `<div class="section-label">3 — What It Means</div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-icon">🛡</div>
+        <div>
+          <div class="card-title">Security Issues Explained</div>
+          <div class="card-sub">Each issue explained in plain, simple language</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="threat-list">`;
+    r.threat_explanations.forEach(t => {
+      html += `<div class="threat-card sev-${t.severity}">
+        <div class="threat-header">
+          <div class="threat-icon">${t.icon}</div>
+          <div class="threat-name">${t.name}</div>
+          <div class="threat-sev-badge ${t.severity}">${t.severity}</div>
+        </div>
+        <div class="threat-plain">${t.plain_text}</div>
+        <div class="threat-meta">
+          <div>Happened: <span>${fmt(t.count)} times</span></div>
+          ${t.last_seen ? `<div>Last time: <span>${t.last_seen}</span></div>` : ''}
+          ${t.off_hours > 0 ? `<div>🌙 Outside normal hours: <span>${t.off_hours} times</span></div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += `</div></div></div>`;
+  } else {
+    html += `<div class="section-label">3 — What It Means</div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header"><div class="card-icon">✅</div>
+        <div><div class="card-title">No Security Threats Found</div></div>
+      </div>
+      <div class="card-body">
+        <p style="color:var(--green);font-weight:600;font-size:14px">Great news! No harmful patterns were detected during this scan period.</p>
+      </div>
+    </div>`;
+  }
+
+  // ── Risk level ──
+  html += `<div class="section-label">4 — Risk Level</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div class="card-icon">${r.risk_icon}</div>
+      <div>
+        <div class="card-title">Overall Risk Level</div>
+        <div class="card-sub">How safe is your computer right now?</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;align-items:center;gap:20px;padding:14px;border-radius:10px;background:${rc}10;border:1px solid ${rc}30">
+        <div style="font-size:40px;line-height:1">${r.risk_icon}</div>
+        <div>
+          <div style="font-size:20px;font-weight:800;color:${rc};margin-bottom:5px">${r.risk_level} Risk</div>
+          <div style="font-size:14px;color:var(--text-2)">${r.risk_simple_msg}</div>
+        </div>
+        <div style="margin-left:auto;text-align:center">
+          <div style="font-size:36px;font-weight:900;color:${rc}">${r.risk_score}</div>
+          <div style="font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.1em">out of 100</div>
+        </div>
+      </div>
+      <p style="margin-top:12px;font-size:13px;color:var(--text-3)">
+        The ${T("risk score")} is calculated based on the number and type of security issues found,
+        any ${T("anomaly")} days with unusual activity, and whether multiple problems happened in a connected sequence (an ${T("attack chain")}).
+      </p>
+    </div>
+  </div>`;
+
+  // ── What to do ──
+  html += `<div class="section-label">5 — What You Should Do</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div class="card-icon">✅</div>
+      <div>
+        <div class="card-title">Recommended Actions</div>
+        <div class="card-sub">Simple steps to keep your computer safe</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="action-list">`;
+  r.actions.forEach(a => {
+    html += `<div class="action-item ${a.priority}">
+      <div class="action-icon">${a.icon}</div>
+      <div class="action-priority ${a.priority}">${a.priority}</div>
+      <div class="action-text">${a.text}</div>
+    </div>`;
+  });
+  html += `</div></div></div>`;
+
+  // ── Key highlights ──
+  html += `<div class="section-label">6 — Key Highlights</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header">
+      <div class="card-icon">💡</div>
+      <div>
+        <div class="card-title">Quick Takeaways</div>
+        <div class="card-sub">The most important points at a glance</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="highlight-grid">`;
+  r.highlights.forEach(h => {
+    html += `<div class="highlight-item">
+      <div class="highlight-dot">→</div>
+      <div>${h}</div>
+    </div>`;
+  });
+  html += `</div></div></div>`;
+
+  // ── Next check ──
+  if (r.next_check) {
+    html += `<div class="next-check-bar" style="margin-bottom:16px">
+      <div class="next-check-icon">⏱</div>
+      <div>
+        <div class="next-check-time">Next scheduled check: ${r.next_check.split('  (')[0]}</div>
+        <div class="next-check-sub">${r.next_check.includes('(') ? r.next_check.split('(')[1]?.replace(')', '') : 'Automatic monitoring is active'}</div>
+      </div>
+    </div>`;
+  }
+
+  // ── Plain glossary ──
+  html += `<div class="section-label">Glossary — What do these words mean?</div>
+  <div class="card" style="margin-bottom:8px">
+    <div class="card-header">
+      <div class="card-icon">📖</div>
+      <div>
+        <div class="card-title">Simple Glossary</div>
+        <div class="card-sub">Plain explanations of technical words used in this report</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="glossary-grid">
+        <div class="glossary-item">
+          <div class="glossary-term">Risk Score</div>
+          <div class="glossary-def">A number from 0 to 100. 0 means perfectly safe. 100 means serious danger. Think of it like a health check score for your computer.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">Anomaly / Unusual Day</div>
+          <div class="glossary-def">A day where the computer had much more activity than normal — like normally getting 10 emails a day and suddenly getting 1,000.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">Brute Force Attack</div>
+          <div class="glossary-def">Someone trying hundreds of passwords very quickly to break in — like trying every key on a keychain until one opens a door.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">Attack Chain</div>
+          <div class="glossary-def">Multiple suspicious things that happened in a connected sequence — like a break-in followed by searching through files, then copying them.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">Privilege Escalation</div>
+          <div class="glossary-def">When someone or a program gains more control than they're supposed to have — like a guest at a hotel getting master key access.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">Event Log</div>
+          <div class="glossary-def">A record of everything that happens on your computer — every login, program start, error, and security event — like a security camera recording.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">Error Rate</div>
+          <div class="glossary-def">The percentage of computer activities that failed. Below 5% is healthy. Above 20% means something may be broken or under attack.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">Confidence Level</div>
+          <div class="glossary-def">How certain the system is about a finding. 90% means it's very sure. 50% means it might be a false alarm worth double-checking.</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  // Footer
+  html += `<div style="text-align:center;font-size:12px;color:var(--text-3);margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+    Secure Eye Trust+  ·  ${r.hostname}  ·  Report generated ${r.generated_at?.slice(0,16) || '—'}  ·  Covers last ${r.period_days} days
+  </div>`;
+
+  root.innerHTML = html;
+}
+
+function fmt(n) {
+  if (n === null || n === undefined) return '—';
+  return Number(n).toLocaleString();
+}
+
+document.addEventListener('DOMContentLoaded', loadReport);
+</script>
+</body>
+</html>

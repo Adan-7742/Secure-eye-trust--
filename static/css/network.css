@@ -1,0 +1,149 @@
+/* network.css — Secure Eye Trust+ v4 */
+
+.net-stat-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.net-stat-pill{
+  flex:1;min-width:110px;max-width:180px;
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:16px 18px;text-align:center;
+  transition:all .2s;
+}
+.net-stat-pill:hover{border-color:var(--border2);transform:translateY(-1px)}
+.net-stat-pill.recv{border-color:rgba(16,185,129,.3)}
+.net-stat-pill.sent{border-color:rgba(26,140,255,.3)}
+.net-stat-pill.conn{border-color:rgba(139,92,246,.3)}
+.net-stat-pill.err {border-color:rgba(239,68,68,.3)}
+.pill-val{
+  font-size:22px;font-weight:800;color:var(--text-bright);
+  font-family:var(--mono);line-height:1;margin-bottom:5px;
+}
+.pill-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim)}
+
+/* Net-tabs — like screenshot pill tabs */
+.net-tabs{
+  display:flex;gap:6px;flex-wrap:wrap;
+  margin-bottom:18px;padding-bottom:14px;
+  border-bottom:1px solid var(--border);
+}
+.net-tab{
+  padding:8px 18px;border-radius:20px;cursor:pointer;font-size:11px;
+  font-weight:600;color:var(--text-mid);transition:all .15s;
+  border:1px solid transparent;white-space:nowrap;
+}
+.net-tab:hover{background:var(--sky-dim);color:var(--sky-bright);border-color:rgba(26,140,255,.2)}
+.net-tab.active{
+  background:linear-gradient(135deg,rgba(26,140,255,.25),rgba(26,140,255,.1));
+  color:#fff;border-color:rgba(26,140,255,.5);
+  box-shadow:0 0 16px rgba(26,140,255,.15);
+}
+
+.net-tab-panel{display:none}
+.net-tab-panel.active{display:block}
+
+.net-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.net-live-badge{
+  font-size:10px;padding:5px 14px;border-radius:20px;font-family:var(--mono);font-weight:700;
+  background:rgba(16,185,129,.12);color:var(--emerald);
+  border:1px solid rgba(16,185,129,.3);
+  animation:live-pulse 2s infinite;
+}
+@keyframes live-pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.2)}
+  50%{box-shadow:0 0 0 6px rgba(16,185,129,0)}
+}
+
+/* ── CONNECTIONS LIST — styled exactly like screenshot table ── */
+.conn-table-wrap{
+  border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;
+}
+.conn-table-header{
+  display:grid;
+  grid-template-columns:80px 1fr 1fr 110px 100px 80px;
+  gap:0;
+  padding:10px 16px;
+  background:var(--panel2);
+  border-bottom:1px solid var(--border);
+  font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--text-dim);
+}
+.conn-row{
+  display:grid;
+  grid-template-columns:80px 1fr 1fr 110px 100px 80px;
+  gap:0;
+  padding:10px 16px;
+  border-bottom:1px solid rgba(255,255,255,.03);
+  align-items:center;transition:background .15s;
+  font-size:12px;
+}
+.conn-row:last-child{border-bottom:none}
+.conn-row:hover{background:rgba(26,140,255,.05)}
+.conn-ip{font-family:var(--mono);color:var(--sky-bright);font-size:11px}
+.conn-ip.remote{color:var(--amber)}
+.proto-badge{
+  display:inline-block;padding:3px 10px;border-radius:20px;
+  font-size:10px;font-weight:700;text-align:center;min-width:44px;
+}
+.proto-tcp{background:rgba(26,140,255,.2);color:var(--sky-bright);border:1px solid rgba(26,140,255,.3)}
+.proto-udp{background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.status-badge{
+  display:inline-block;padding:3px 9px;border-radius:20px;
+  font-size:10px;font-weight:700;
+}
+.status-established{background:rgba(16,185,129,.15);color:var(--emerald);border:1px solid rgba(16,185,129,.3)}
+.status-listen{background:rgba(26,140,255,.12);color:var(--sky-bright);border:1px solid rgba(26,140,255,.25)}
+.status-close{background:rgba(239,68,68,.12);color:var(--red-bright);border:1px solid rgba(239,68,68,.25)}
+.status-other{background:rgba(100,120,150,.12);color:var(--text-mid);border:1px solid var(--border)}
+.enc-tls{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:20px;
+  font-size:10px;font-weight:700;
+  background:rgba(16,185,129,.12);color:var(--emerald);
+  border:1px solid rgba(16,185,129,.25);
+}
+.conn-process{font-size:11px;color:var(--text-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Bandwidth bars */
+.bw-bar-track{height:7px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.bw-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+
+/* Interfaces grid */
+.iface-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.iface-card{
+  background:var(--panel2);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:16px;transition:all .2s;
+}
+.iface-card.up{border-left:3px solid var(--emerald)}
+.iface-card.down{border-left:3px solid var(--red);opacity:.65}
+.iface-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.iface-name{font-size:12px;font-weight:800;color:var(--text-bright);font-family:var(--mono)}
+.iface-ip{font-size:10px;color:var(--sky-bright);font-family:var(--mono);margin:3px 0}
+.iface-stat{font-size:10px;color:var(--text-dim);margin-top:3px}
+
+/* Security grid */
+.net-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.net-grid-2{grid-template-columns:1fr}}
+
+/* Security timeline dots */
+.corr-event{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.corr-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.corr-dot.FAILURE,.corr-dot.ERROR,.corr-dot.CRITICAL{background:var(--red);box-shadow:0 0 6px var(--red)}
+.corr-dot.WARNING{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.corr-dot.INFORMATION,.corr-dot.SUCCESS{background:var(--emerald)}
+.corr-body{flex:1;min-width:0}
+.corr-title{font-size:11px;font-weight:700;color:var(--text-bright);margin-bottom:2px}
+.corr-meta{font-size:10px;color:var(--text-dim)}
+.corr-alert{
+  margin-top:6px;padding:6px 10px;border-radius:var(--r);
+  background:var(--red-dim);border-left:3px solid var(--red);
+  font-size:10px;color:var(--red-bright);
+}
+
+/* Particle stream */
+.pkt-particle{position:absolute;border-radius:50%;opacity:.7;animation:drift-right linear infinite}
+.pkt-particle.recv{background:var(--emerald)}
+.pkt-particle.sent{background:var(--sky-bright)}
+@keyframes drift-right{
+  from{transform:translateX(-20px);opacity:0}
+  10%{opacity:.7}90%{opacity:.7}
+  to{transform:translateX(calc(100vw + 20px));opacity:0}
+}
+#conn-map-svg{background:radial-gradient(ellipse at 30% 40%,#091425 0%,#030609 100%);border-radius:0 0 var(--r-xl) var(--r-xl)}

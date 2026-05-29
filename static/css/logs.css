@@ -1,0 +1,140 @@
+/* static/css/logs.css
+   Log table, filters, level badges
+   =================================== */
+
+/* ── Log page header ── */
+.logs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  flex-wrap: wrap;
+}
+
+.logs-page-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-bright);
+  flex: 1;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ── Log table ── */
+.log-table-wrap {
+  overflow-x: auto;
+  padding: 0 20px 20px;
+}
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+.log-table th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  background: var(--panel);
+  position: sticky;
+  top: 48px;
+}
+
+.log-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(30,37,48,0.5);
+  vertical-align: top;
+  max-width: 420px;
+  word-break: break-word;
+}
+
+.log-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.log-table .col-ts    { color: var(--text-dim); white-space: nowrap; }
+.log-table .col-eid   { color: var(--accent); }
+.log-table .col-src   { color: var(--text); }
+.log-table .col-msg   { color: var(--text); line-height: 1.4; }
+
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.pagination .page-info {
+  flex: 1;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+
+.page-btn {
+  padding: 4px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.page-btn:hover    { border-color: var(--accent); color: var(--accent); }
+.page-btn.active   { background: var(--accent); color: #000; border-color: var(--accent); }
+.page-btn:disabled { opacity: .3; cursor: not-allowed; }
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--text-dim);
+}
+
+.empty-state .empty-icon { font-size: 36px; margin-bottom: 10px; }
+.empty-state .empty-title { font-size: 14px; color: var(--text); margin-bottom: 6px; }
+.empty-state .empty-sub   { font-size: 12px; }
+
+/* ── Search page ── */
+.search-bar {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.search-input {
+  flex: 1;
+  font-size: 13px;
+}
+
+.search-meta {
+  padding: 8px 20px;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  border-bottom: 1px solid var(--border);
+}

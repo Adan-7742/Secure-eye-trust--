@@ -1,0 +1,2432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Eye Trust+ — Security Dashboard</title>
+<link rel="stylesheet" href="/static/css/main.css?v=1773255695">
+<link rel="stylesheet" href="/static/css/chat.css?v=1773255695">
+<link rel="stylesheet" href="/static/css/network.css?v=1773255695">
+<style>
+/* ── Real-time alert system ─────────────────────────────────────── */
+#alert-bell-wrap { position:relative; cursor:pointer; }
+#alert-badge {
+  position:absolute; top:-4px; right:-4px;
+  background:#ef4444; color:#fff;
+  font-size:9px; font-weight:800;
+  min-width:16px; height:16px;
+  border-radius:8px; display:none;
+  align-items:center; justify-content:center;
+  padding:0 3px; line-height:1;
+}
+#alert-badge.visible { display:flex; }
+#page-dashboard .stat-meta { display:none !important; }
+#alert-drawer {
+  position:fixed; top:0; right:0; width:400px; height:100vh;
+  background:#0d1526; border-left:1px solid rgba(255,255,255,.1);
+  z-index:9999; transform:translateX(100%);
+  transition:transform .25s ease; overflow:hidden;
+  display:flex; flex-direction:column;
+}
+#alert-drawer.open { transform:translateX(0); }
+#alert-drawer-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 18px; border-bottom:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;
+}
+#alert-drawer-list {
+  flex:1; overflow-y:auto; padding:0;
+}
+.alert-item {
+  padding:12px 18px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  border-left:3px solid transparent;
+  cursor:pointer; transition:background .1s;
+}
+.alert-item:hover { background:rgba(255,255,255,.03); }
+.alert-item.unread { background:rgba(255,255,255,.02); }
+.alert-item.sev-CRITICAL { border-left-color:#ef4444; }
+.alert-item.sev-HIGH     { border-left-color:#f97316; }
+.alert-item.sev-MEDIUM   { border-left-color:#fbbf24; }
+.alert-item.sev-LOW      { border-left-color:#22c55e; }
+.alert-item-title { font-size:12px; font-weight:700; color:#e2e8f0; margin-bottom:3px; }
+.alert-item-desc  { font-size:11px; color:#64748b; line-height:1.5; }
+.alert-item-meta  { font-size:10px; color:#475569; margin-top:4px; }
+.alert-sev-pill {
+  display:inline-block; font-size:9px; font-weight:800;
+  padding:1px 6px; border-radius:3px; margin-right:6px;
+  text-transform:uppercase; letter-spacing:.05em;
+}
+.sev-pill-CRITICAL { background:rgba(239,68,68,.15);  color:#f87171; }
+.sev-pill-HIGH     { background:rgba(249,115,22,.15); color:#fb923c; }
+.sev-pill-MEDIUM   { background:rgba(251,191,36,.15); color:#fbbf24; }
+.sev-pill-LOW      { background:rgba(34,197,94,.15);  color:#4ade80; }
+
+/* Toast alerts */
+#alert-toast-container {
+  position:fixed; bottom:20px; right:20px;
+  z-index:10000; display:flex; flex-direction:column;
+  gap:8px; max-width:360px;
+}
+.alert-toast {
+  padding:12px 16px; border-radius:10px;
+  background:#0f172a; border:1px solid rgba(255,255,255,.1);
+  border-left:4px solid #ef4444;
+  color:#e2e8f0; font-size:12px;
+  animation:toast-in .3s ease-out;
+  cursor:pointer;
+}
+@keyframes toast-in {
+  from { opacity:0; transform:translateX(20px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+.alert-toast.CRITICAL { border-left-color:#ef4444; }
+.alert-toast.HIGH     { border-left-color:#f97316; }
+.alert-toast.MEDIUM   { border-left-color:#fbbf24; }
+
+    /* ── Time-Series ────────────────────────────────── */
+    .ts-summary-card .panel-body { padding:18px 14px !important; text-align:center; }
+    .ts-stats-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px; }
+    .ts-stat-pill { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06);
+      border-radius:8px; padding:8px 14px; text-align:center; min-width:90px; }
+    .ts-stat-label { font-size:9px; color:#475569; text-transform:uppercase;
+      letter-spacing:.07em; font-weight:700; margin-top:3px; }
+    .ts-anomaly-list { background:rgba(0,0,0,.15); border-radius:8px; padding:10px 12px; }
+    .ts-anomaly-list-title { font-size:9px; color:#475569; text-transform:uppercase;
+      letter-spacing:.07em; font-weight:700; margin-bottom:6px; }
+    .ts-anomaly-row { display:flex; align-items:center; gap:10px; padding:4px 0;
+      border-bottom:1px solid rgba(255,255,255,.03); font-size:11px; }
+    .ts-anomaly-time  { color:#94a3b8; font-family:monospace; min-width:80px; }
+    .ts-anomaly-count { font-weight:700; color:#e2e8f0; min-width:60px; text-align:right; }
+    .ts-anomaly-z     { font-family:monospace; color:#64748b; min-width:60px; }
+    .ts-anomaly-warn  { color:#ef4444; font-weight:700; }
+    .ts-anom-entry { display:flex; border-bottom:1px solid rgba(255,255,255,.04);
+      transition:background .15s; border-radius:4px; overflow:hidden; margin-bottom:2px; }
+    .ts-anom-entry:hover { background:rgba(255,255,255,.02); }
+    .ts-ticker-row { display:flex; align-items:center; gap:10px; padding:1px 0;
+      border-bottom:1px solid rgba(255,255,255,.02); }
+    .ts-ticker-time   { color:#475569; min-width:130px; font-size:10px; }
+    .ts-ticker-stream { min-width:100px; font-size:9px; }
+    .ts-ticker-bar    { flex:1; overflow:hidden; font-size:9px; letter-spacing:-1px; }
+    .ts-ticker-count  { font-weight:700; font-size:11px; min-width:60px; text-align:right; }
+
+    .intel-card { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:12px; padding:20px 16px; text-align:center; transition:border-color .2s,transform .15s; }
+    .intel-card:hover { border-color:rgba(255,255,255,.15); transform:translateY(-2px); }
+    .intel-card-val { font-size:34px; font-weight:900; line-height:1; margin-bottom:6px; font-variant-numeric:tabular-nums; transition:transform .25s; }
+    .intel-card-lbl { font-size:10px; color:#475569; text-transform:uppercase; letter-spacing:.08em; font-weight:700; }
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════ TOPBAR ════════════════════════════════ -->
+<header class="topbar">
+  <div class="topbar-brand">
+
+    <!-- ── Animated Shield Logo ── -->
+    <div class="brand-logo-wrap">
+      <!-- Live bubbles rising from lock -->
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+      <div class="bubble"></div>
+
+      <!-- SVG: Shield + PCB circuit + lock + checkmark — matches provided image -->
+      <svg class="brand-logo-svg" viewBox="0 0 100 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="shBg" x1="0" y1="0" x2="100" y2="110" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1e4fcc"/>
+            <stop offset="50%" stop-color="#0d2fa0"/>
+            <stop offset="100%" stop-color="#061880"/>
+          </linearGradient>
+          <linearGradient id="shStroke" x1="0" y1="0" x2="100" y2="110" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#7dd3fc"/>
+            <stop offset="60%" stop-color="#38a3f5"/>
+            <stop offset="100%" stop-color="#06b6d4"/>
+          </linearGradient>
+          <linearGradient id="lockGrad" x1="30" y1="40" x2="70" y2="90" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#e0f0ff"/>
+            <stop offset="100%" stop-color="#a8d4ff"/>
+          </linearGradient>
+          <filter id="glow2"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <filter id="glow3"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+
+        <!-- Shield body fill -->
+        <path d="M50 4 L92 18 L92 54 C92 78 74 97 50 106 C26 97 8 78 8 54 L8 18 Z"
+          fill="url(#shBg)"/>
+        <!-- Shield inner highlight ring -->
+        <path d="M50 10 L87 22.5 L87 54 C87 75 70 93 50 101 C30 93 13 75 13 54 L13 22.5 Z"
+          fill="none" stroke="rgba(125,211,252,0.25)" stroke-width="1.5"/>
+        <!-- Shield outer border glow -->
+        <path d="M50 4 L92 18 L92 54 C92 78 74 97 50 106 C26 97 8 78 8 54 L8 18 Z"
+          fill="none" stroke="url(#shStroke)" stroke-width="2.5" filter="url(#glow2)"/>
+
+        <!-- PCB circuit lines — left side -->
+        <g stroke="rgba(125,211,252,0.6)" stroke-width="1.2" fill="none" filter="url(#glow3)">
+          <line x1="22" y1="42" x2="33" y2="42"/><circle cx="22" cy="42" r="2" fill="rgba(125,211,252,0.7)"/>
+          <line x1="22" y1="55" x2="28" y2="55"/><line x1="28" y1="55" x2="28" y2="48"/><line x1="28" y1="48" x2="35" y2="48"/>
+          <circle cx="22" cy="55" r="2" fill="rgba(125,211,252,0.7)"/>
+          <line x1="20" y1="68" x2="32" y2="68"/><circle cx="20" cy="68" r="2" fill="rgba(125,211,252,0.7)"/>
+          <line x1="25" y1="80" x2="34" y2="80"/><line x1="25" y1="80" x2="25" y2="72"/>
+          <circle cx="25" cy="72" r="2" fill="rgba(125,211,252,0.7)"/>
+        </g>
+        <!-- PCB circuit lines — right side -->
+        <g stroke="rgba(125,211,252,0.6)" stroke-width="1.2" fill="none" filter="url(#glow3)">
+          <line x1="78" y1="42" x2="67" y2="42"/><circle cx="78" cy="42" r="2" fill="rgba(125,211,252,0.7)"/>
+          <line x1="78" y1="55" x2="72" y2="55"/><line x1="72" y1="55" x2="72" y2="48"/><line x1="72" y1="48" x2="65" y2="48"/>
+          <circle cx="78" cy="55" r="2" fill="rgba(125,211,252,0.7)"/>
+          <line x1="80" y1="68" x2="68" y2="68"/><circle cx="80" cy="68" r="2" fill="rgba(125,211,252,0.7)"/>
+          <line x1="75" y1="80" x2="66" y2="80"/><line x1="75" y1="80" x2="75" y2="72"/>
+          <circle cx="75" cy="72" r="2" fill="rgba(125,211,252,0.7)"/>
+        </g>
+
+        <!-- Lock body -->
+        <rect x="35" y="54" width="30" height="24" rx="4" fill="url(#lockGrad)" filter="url(#glow3)"/>
+        <!-- Lock shackle -->
+        <path d="M40 54 L40 46 C40 38 60 38 60 46 L60 54"
+          stroke="url(#lockGrad)" stroke-width="4.5" stroke-linecap="round" fill="none" filter="url(#glow2)"/>
+        <!-- Lock shine -->
+        <rect x="37" y="54" width="10" height="6" rx="3" fill="rgba(255,255,255,0.25)"/>
+        <!-- Keyhole -->
+        <circle cx="50" cy="64" r="4" fill="rgba(6,24,90,.9)"/>
+        <rect x="48" y="65" width="4" height="7" rx="2" fill="rgba(6,24,90,.9)"/>
+
+        <!-- Checkmark slash (like image) -->
+        <path d="M38 75 L60 52" stroke="rgba(255,255,255,0.2)" stroke-width="8" stroke-linecap="round"/>
+        <path d="M35 82 L58 58" stroke="rgba(255,255,255,0.12)" stroke-width="12" stroke-linecap="round"/>
+
+        <!-- Sparkle dots at top -->
+        <circle cx="50" cy="14" r="2.2" fill="#7dd3fc" opacity=".8"/>
+        <circle cx="42" cy="16" r="1.4" fill="#7dd3fc" opacity=".5"/>
+        <circle cx="58" cy="16" r="1.4" fill="#7dd3fc" opacity=".5"/>
+        <circle cx="35" cy="20" r="1" fill="#7dd3fc" opacity=".3"/>
+        <circle cx="65" cy="20" r="1" fill="#7dd3fc" opacity=".3"/>
+      </svg>
+    </div>
+
+    <div class="brand-text">
+      <div class="brand-name">
+        Secure Eye <span class="brand-accent">Trust</span><span class="brand-plus">+</span>
+      </div>
+      <div class="brand-tag">Desktop Security Monitoring</div>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <span class="topbar-badge offline" id="realtime-badge">⚪ Connecting…</span>
+    <div class="topbar-divider"></div>
+    <button class="fetch-btn" id="fetch-btn" onclick="doFetch()">🪟 Fetch Logs</button>
+    <button class="btn btn-primary" onclick="showPage('chat', this)" style="font-size:11px">AI Assistant 🤖</button>
+    <div class="topbar-divider"></div>
+    <button class="alert-topbar-btn" id="alert-topbar-btn" onclick="window.toggleAlertPanel()" title="Security Alerts">
+      <span class="alert-bell-icon">🔔</span>
+      <span class="alert-badge hidden" id="alert-badge-count">0</span>
+    </button>
+  </div>
+</header>
+
+<!-- 🔔 Real Alert Notification Center -->
+<div class="alert-panel" id="alert-panel">
+
+  <!-- Header -->
+  <div class="alert-panel-head">
+    <div class="alert-panel-top-row">
+      <div class="alert-panel-title">
+        <div class="alert-panel-title-dot" id="alert-title-dot"></div>
+        Security Alerts
+      </div>
+      <button class="alert-dismiss-all" onclick="window.dismissAllAlerts()">Dismiss All</button>
+    </div>
+    <!-- Severity filter pills -->
+    <div class="alert-summary-pills">
+      <div class="alert-pill critical active" id="apill-critical" onclick="window.filterAlerts('critical')">
+        🔴 Critical <span class="alert-pill-count" id="acount-critical">0</span>
+      </div>
+      <div class="alert-pill warning active" id="apill-warning" onclick="window.filterAlerts('warning')">
+        🟡 Warning <span class="alert-pill-count" id="acount-warning">0</span>
+      </div>
+      <div class="alert-pill info active" id="apill-info" onclick="window.filterAlerts('info')">
+        🔵 Info <span class="alert-pill-count" id="acount-info">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live refresh bar -->
+  <div class="alert-refresh-bar">
+    <span><span class="alert-refresh-dot"></span>Auto-refreshing every 15s · <span id="alert-last-updated">—</span></span>
+    <button class="alert-refresh-btn" onclick="window.refreshAlerts()">↻ Refresh now</button>
+  </div>
+
+  <!-- Alert list -->
+  <div class="alert-list-scroll" id="alert-list"></div>
+
+  <!-- Footer -->
+  <div class="alert-panel-foot">
+    <span id="alert-panel-summary">Loading alerts…</span>
+    <span>Source: Live System Data</span>
+  </div>
+
+</div>
+
+<!-- ═══════════════════ APP SHELL ══════════════════════════════ -->
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Overview</div>
+      <div class="nav-item active" onclick="showPage('dashboard', this)">
+        <div class="nav-label"><span class="nav-icon">📊</span> Dashboard</div>
+      </div>
+      <div class="nav-item" id="nav-perform" onclick="showPage('perform', this)">
+        <div class="nav-label"><span class="nav-icon">🧠</span> Perform Analysis</div>
+      </div>
+      <div class="nav-item" onclick="showPage('upload', this)">
+        <div class="nav-label"><span class="nav-icon">📤</span> Upload Logs</div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Analysis</div>
+      <div class="analysis-item" onclick="showPage('timeseries', this); loadTimeSeries()">
+        <span>📉</span> Time-Series
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Security</div>
+      <div class="nav-item" onclick="showPage('network', this)" id="nav-network">
+        <div class="nav-label"><span class="nav-icon">🌐</span> Network Analyzer</div>
+        <span class="nav-badge" id="badge-network" style="color:var(--emerald)">●</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Security</div>
+      <div class="nav-item" onclick="showPage('intruder', this)" id="nav-intruder">
+        <div class="nav-label"><span class="nav-icon">👁</span> Intruder Watch</div>
+        <span class="nav-badge danger" id="badge-intruder" style="display:none">0</span>
+      </div>
+      <div class="nav-item" onclick="showPage('locker', this)" id="nav-locker">
+        <div class="nav-label"><span class="nav-icon">🔒</span> Folder Lock</div>
+        <span class="nav-badge" id="badge-locker" style="display:none;background:var(--amber);color:#000">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Reports</div>
+      <div class="nav-item" onclick="showPage('reports', this)" id="nav-reports" style="position:relative">
+        <div class="nav-label"><span class="nav-icon">📄</span> Reports</div>
+        <span class="nav-badge" id="badge-reports">0</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">AI Assistant</div>
+      <div class="nav-item" onclick="showPage('chat', this)" id="nav-chat">
+        <div class="nav-label"><span class="nav-icon">🤖</span> AI Chat</div>
+        <span class="chat-unread" id="chat-unread-dot"></span>
+      </div>
+    </div>
+
+    <div class="sidebar-net-status">
+      <div class="sidebar-net-title">🌐 Network Status</div>
+      <div class="sidebar-net-row">
+        <div class="sidebar-net-dot green"></div>
+        <span>Connections: <strong id="sidebar-conn-count">—</strong></span>
+      </div>
+      <div class="sidebar-net-row">
+        <div class="sidebar-net-dot blue"></div>
+        <span id="sidebar-net-status">All ports secured</span>
+      </div>
+      <div class="net-mini-bar"><div class="net-mini-fill" id="sidebar-bw-bar"></div></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-brand">
+        <div class="sidebar-footer-dot"></div>
+        <div class="sidebar-footer-text">SECURE EYE TRUST+ v2.0</div>
+        <button onclick="doLogout()" style="margin-top:8px;width:100%;padding:7px;border-radius:8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;cursor:pointer;font-size:11px;font-family:var(--sans);font-weight:600;transition:all .15s" onmouseover="this.style.background='rgba(239,68,68,.2)'" onmouseout="this.style.background='rgba(239,68,68,.1)'">🚪 Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📊 Dashboard</div>
+          <div class="page-subtitle">Real-time monitoring and threat detection</div>
+        </div>
+        
+      </div>
+
+      <!-- Log count cards -->
+      <div class="overview-grid">
+        <div class="stat-card app" tabindex="0" role="button" style="cursor:pointer"
+             onclick="showLogsPage('application', this)" onkeypress="if(event.key==='Enter') showLogsPage('application', this)">
+          <div class="stat-label">Application Logs</div>
+          <div class="stat-value" id="stat-app">—</div>
+          <div class="stat-meta"><span class="stat-errors" id="errs-app">— errors</span><span class="stat-rate" id="rate-app">—%</span></div>
+        </div>
+        <div class="stat-card sys" tabindex="0" role="button" style="cursor:pointer"
+             onclick="showLogsPage('system', this)" onkeypress="if(event.key==='Enter') showLogsPage('system', this)">
+          <div class="stat-label">System Logs</div>
+          <div class="stat-value" id="stat-sys">—</div>
+          <div class="stat-meta"><span class="stat-errors" id="errs-sys">— errors</span><span class="stat-rate" id="rate-sys">—%</span></div>
+        </div>
+        <div class="stat-card sec" tabindex="0" role="button" style="cursor:pointer"
+             onclick="showLogsPage('security', this)" onkeypress="if(event.key==='Enter') showLogsPage('security', this)">
+          <div class="stat-label">Security Logs</div>
+          <div class="stat-value" id="stat-sec">—</div>
+          <div class="stat-meta"><span class="stat-errors" id="errs-sec">— events</span><span class="stat-rate" id="rate-sec">—%</span></div>
+        </div>
+        <div class="stat-card upd" tabindex="0" role="button" style="cursor:pointer"
+             onclick="showLogsPage('windows_update', this)" onkeypress="if(event.key==='Enter') showLogsPage('windows_update', this)">
+          <div class="stat-label">Windows Update</div>
+          <div class="stat-value" id="stat-upd">—</div>
+          <div class="stat-meta"><span class="stat-errors" id="errs-upd">— errors</span><span class="stat-rate" id="rate-upd">—%</span></div>
+        </div>
+      </div>
+
+
+      <!-- ══ FR10-01: Windows Command Bar (familiar UI toolbar) ══════════ -->
+      <div id="win-command-bar-mount"></div>
+
+      <!-- ══ FR10-02: Windows-Specific Security Metrics &amp; Counters ═══ -->
+      <div class="win-section-label">🪟 Windows Security Metrics &amp; Counters</div>
+      <div id="win-metrics-grid-mount"></div>
+      <div id="win-metrics-footer-mount"></div>
+
+      <!-- Real system stats — dark themed, animated -->
+      <div class="sys-grid">
+
+        <!-- CPU -->
+        <div class="sys-card cpu-card">
+          <div class="sys-card-header">
+            <span class="sys-card-title">🖥 CPU Level</span>
+            <span class="sys-status-badge status-normal" id="cpu-status-badge">Normal</span>
+          </div>
+          <div class="sys-value" id="cpu-value">—</div>
+          <div class="sys-sublabel">Overall Usage</div>
+          <div class="sys-bar-track">
+            <div class="sys-bar-fill cpu" id="cpu-bar" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Memory -->
+        <div class="sys-card mem-card">
+          <div class="sys-card-header">
+            <span class="sys-card-title">💾 Memory Usage</span>
+            <span class="sys-status-badge status-normal" id="mem-status-badge">—</span>
+          </div>
+          <div class="sys-value" id="mem-value">—</div>
+          <div class="sys-sublabel">RAM Utilization</div>
+          <div class="sys-bar-track">
+            <div class="sys-bar-fill memory" id="mem-bar" style="width:0%"></div>
+          </div>
+          <div class="sys-meta">
+            <span>Available: <strong id="mem-avail">—</strong></span>
+            <span>Total: <strong id="mem-total">—</strong></span>
+          </div>
+        </div>
+
+        <!-- Disk -->
+        <div class="sys-card disk-card">
+          <div class="sys-card-header">
+            <span class="sys-card-title">💿 Disk Usage</span>
+            <span class="sys-status-badge status-normal" id="disk-status-badge">Normal</span>
+          </div>
+          <div class="sys-value" id="disk-value">—</div>
+          <div class="sys-sublabel">Storage Utilization</div>
+          <div class="sys-bar-track">
+            <div class="sys-bar-fill disk" id="disk-bar" style="width:0%"></div>
+          </div>
+          <div class="sys-meta">
+            <span>Free: <strong id="disk-free">—</strong></span>
+            <span>Total: <strong id="disk-total">—</strong></span>
+          </div>
+        </div>
+
+        <!-- System Info -->
+        <div class="sys-card info-card">
+          <div class="sys-card-header">
+            <span class="sys-card-title">⚡ System Info</span>
+            <span class="sys-status-badge status-normal">
+              <span class="sys-live-dot"></span>Active
+            </span>
+          </div>
+          <div class="sys-value" id="sys-uptime">—</div>
+          <div class="sys-sublabel">System Uptime</div>
+          <div class="info-stats-grid">
+            <div class="info-stat-item">
+              <div class="info-stat-label">Network ↓</div>
+              <div class="info-stat-val recv" id="sys-net-recv">—</div>
+            </div>
+            <div class="info-stat-item">
+              <div class="info-stat-label">Network ↑</div>
+              <div class="info-stat-val sent" id="sys-net-sent">—</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--text-dim)">
+            Host: <strong id="sys-hostname" style="color:var(--text-bright)">—</strong>
+          </div>
+        </div>
+
+      </div>
+
+
+
+
+      <!-- ══ FR11 Windows System Health Analysis ════════════════════════ -->
+      <div class="win-section-label">🏥 Windows System Health Analysis</div>
+      <div id="fr11-health-panel"></div>
+
+
+
+      <!-- Charts -->
+      <div class="chart-grid">
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">📊 By Category</div></div>
+          <div class="panel-body"><canvas id="category-chart" height="200"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">📅 Daily Volume (30 days)</div></div>
+          <div class="panel-body"><canvas id="timeline-chart" height="200"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         PERFORM ANALYSIS PAGE
+    ════════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-perform">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="page-title">🧠 Perform Analysis</div>
+          <div class="page-subtitle" id="pa-subtitle">Deep time-based analysis of all system logs</div>
+        </div>
+        <!-- Re-run button — hidden until a report exists (JS toggles display) -->
+        <div id="pa-header-actions" style="display:flex;gap:10px;align-items:center">
+          <button id="pa-run-btn" onclick="paStartHunting()"
+            style="background:linear-gradient(135deg,#1a8cff,#0066cc);color:#fff;border:none;padding:11px 26px;border-radius:11px;cursor:pointer;font-size:14px;font-weight:800;letter-spacing:.03em;box-shadow:0 4px 18px rgba(26,140,255,.4);transition:all .2s;display:none;align-items:center;gap:8px">
+            <span>🔄</span> Run Analysis
+          </button>
+        </div>
+      </div>
+
+      <!-- IDLE STATE — Centered Start Hunting button -->
+      <div id="pa-idle" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;padding:40px 20px;text-align:center;gap:18px">
+        <div style="font-size:54px;line-height:1;filter:drop-shadow(0 0 18px rgba(26,140,255,.45))">🛡</div>
+        <div style="font-size:24px;font-weight:900;color:#fff;letter-spacing:.02em">Ready to Hunt for Threats</div>
+        <div style="font-size:13px;color:#64748b;max-width:460px;line-height:1.6;margin-bottom:6px">
+          Click below to start a deep security analysis of your system. Results will appear once the scan completes.
+        </div>
+        <button id="pa-start-hunt-btn" onclick="paStartHunting()"
+          style="background:linear-gradient(135deg,#1a8cff,#0066cc);color:#fff;border:none;padding:16px 42px;border-radius:14px;cursor:pointer;font-size:16px;font-weight:800;letter-spacing:.04em;box-shadow:0 8px 28px rgba(26,140,255,.45);transition:transform .15s ease, box-shadow .15s ease;display:inline-flex;align-items:center;gap:10px"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 34px rgba(26,140,255,.6)'"
+          onmouseout="this.style.transform='';this.style.boxShadow='0 8px 28px rgba(26,140,255,.45)'">
+          <span style="font-size:18px">🎯</span> Start Hunting
+        </button>
+      </div>
+
+      <!-- LOADING STATE — Radar Scanner -->
+      <div id="pa-loading" style="display:none;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:32px">
+
+        <!-- Radar sweep -->
+        <div class="radar-wrap">
+          <!-- concentric rings -->
+          <div class="radar-ring radar-ring-1"></div>
+          <div class="radar-ring radar-ring-2"></div>
+          <div class="radar-ring radar-ring-3"></div>
+          <!-- cross hairs -->
+          <div class="radar-cross radar-cross-h"></div>
+          <div class="radar-cross radar-cross-v"></div>
+          <!-- sweep wedge (canvas-drawn via JS for glow) -->
+          <canvas class="radar-canvas" id="radarCanvas" width="280" height="280"></canvas>
+          <!-- center percent -->
+          <div class="radar-percent" id="radar-percent">0%</div>
+          <!-- blip dots injected by JS -->
+          <div class="radar-blips" id="radarBlips"></div>
+        </div>
+
+        <!-- Stage label -->
+        <div class="radar-stage" id="radar-stage">Initialising scan…</div>
+
+        <!-- Step list -->
+        <div class="pa-loading-steps">
+          <div class="pa-step pa-step-active" id="pa-step1">⟳ Scanning threat patterns…</div>
+          <div class="pa-step" id="pa-step2">◎ Running anomaly detection…</div>
+          <div class="pa-step" id="pa-step3">◎ Computing temporal patterns…</div>
+          <div class="pa-step" id="pa-step4">◎ Building report…</div>
+        </div>
+
+        <!-- Live file-scan ticker — shows during scan, hides on completion -->
+        <div id="pa-file-ticker-wrap"
+          style="width:100%;max-width:640px;margin-top:12px;background:rgba(0,255,136,.04);border:1px solid rgba(0,255,136,.18);border-radius:10px;padding:14px 16px;font-family:JetBrains Mono,Consolas,monospace">
+          <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.18em;color:rgba(0,255,136,.7);font-weight:700;text-transform:uppercase;margin-bottom:8px">
+            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;animation:pa-ticker-pulse 1s ease-in-out infinite"></span>
+            Currently scanning
+          </div>
+          <div id="pa-file-ticker"
+            style="font-size:12px;color:#a3f7c0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:18px">
+            initializing&hellip;
+          </div>
+          <div id="pa-file-ticker-count"
+            style="margin-top:6px;font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.06em">
+            0 files inspected
+          </div>
+        </div>
+        <style>
+          @keyframes pa-ticker-pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+        </style>
+
+      </div>
+
+      <!-- REPORT -->
+      <div id="pa-report" style="display:none">
+
+        <!-- ══ UNIFIED REPORT HEADER ══ -->
+        <div class="ur-header">
+          <div class="ur-header-left">
+            <div class="ur-title">Unified Security Analysis</div>
+            <div class="ur-meta">
+              Generated: <span id="pa-generated"></span>
+              &nbsp;·&nbsp; <span id="pa-period"></span>
+              &nbsp;·&nbsp; Peak hour: <span id="pa-peak-hour" style="color:#00e5ff;font-weight:800"></span>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div id="pa-risk-badge"></div>
+            <div id="pa-download-btns" style="display:flex;gap:6px"></div>
+          </div>
+        </div>
+
+        <!-- ══ PIPELINE FLOW STRIP ══ -->
+        <div class="ur-pipeline">
+          <div class="ur-pipe-node" id="urp-logs">
+            <span class="ur-pipe-icon">🗂</span>
+            <span class="ur-pipe-label">Logs</span>
+            <span class="ur-pipe-count" id="urp-log-count">—</span>
+          </div>
+          <div class="ur-pipe-arrow">→</div>
+          <div class="ur-pipe-node" id="urp-sysmon">
+            <span class="ur-pipe-icon">⚙</span>
+            <span class="ur-pipe-label">Sysmon</span>
+            <span class="ur-pipe-count" id="urp-sysmon-count">—</span>
+          </div>
+          <div class="ur-pipe-arrow">→</div>
+          <div class="ur-pipe-node" id="urp-files">
+            <span class="ur-pipe-icon">📂</span>
+            <span class="ur-pipe-label">Files Scanned</span>
+            <span class="ur-pipe-count" id="urp-files-count">—</span>
+          </div>
+          <div class="ur-pipe-arrow">→</div>
+          <div class="ur-pipe-node" id="urp-threat">
+            <span class="ur-pipe-icon">🔍</span>
+            <span class="ur-pipe-label">Threat Detector</span>
+            <span class="ur-pipe-count" id="urp-threat-count">—</span>
+          </div>
+          <div class="ur-pipe-arrow">→</div>
+          <div class="ur-pipe-node" id="urp-malware">
+            <span class="ur-pipe-icon">🦠</span>
+            <span class="ur-pipe-label">Malware Corr.</span>
+            <span class="ur-pipe-count" id="urp-malware-count">—</span>
+          </div>
+          <div class="ur-pipe-arrow">→</div>
+          <div class="ur-pipe-node ur-pipe-node--risk" id="urp-risk">
+            <span class="ur-pipe-icon">🎯</span>
+            <span class="ur-pipe-label">Risk Score</span>
+            <span class="ur-pipe-count" id="urp-risk-val">—</span>
+          </div>
+        </div>
+
+        <!-- Timeline chart -->
+        <div class="ur-panel">
+          <div class="ur-panel-title">📅 Event Timeline <span class="ur-panel-sub">Red dots = anomaly spikes</span></div>
+          <div style="height:200px;position:relative"><canvas id="pa-chart-timeline"></canvas></div>
+        </div>
+
+        <!-- ══ SECTION 1b: THREAT DETECTOR HITS ══ -->
+        <div class="ur-panel">
+          <div class="ur-panel-title">🔍 Threat Detector Hits <span class="ur-panel-sub">Windows Security / System / Application logs</span></div>
+          <div id="ur-threat-hits-body">
+            <div class="ur-empty">Run analysis to load threat detections</div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION 2: MALWARE ANALYSIS ══ -->
+        <div class="ur-section-header">
+          <span class="ur-section-badge ur-badge-red">🦠 Malware Analysis</span>
+        </div>
+        <div class="ur-panel">
+          <div class="ur-panel-title">Malware Detections <span class="ur-panel-sub">Rule-based + behavioural heuristics (confidence ≥ 65%, count ≥ 3)</span></div>
+          <div id="ur-malware-body">
+            <div class="ur-empty">Run analysis to load malware detections</div>
+          </div>
+        </div>
+
+        <!-- ══ FILES SCANNED ══ -->
+        <div class="ur-panel">
+          <div class="ur-panel-title">📂 Files Scanned <span class="ur-panel-sub">Downloads · Desktop · Temp · AppData — YARA scan results</span></div>
+          <div id="ur-files-scanned">
+            <div class="ur-empty">Run analysis to load file scan results</div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION 3: SUSPICIOUS PROCESSES ══ -->
+        <div class="ur-section-header">
+          <span class="ur-section-badge ur-badge-orange">⚙ Suspicious Processes</span>
+        </div>
+        <div class="ur-panel">
+          <div class="ur-panel-title">Process Anomalies <span class="ur-panel-sub">Sysmon EID 1 · Office→Shell · Unsigned EXEs</span></div>
+          <div id="ur-process-body">
+            <div class="ur-empty">Run analysis to load process data</div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION 4: FILE DROPS ══ -->
+        <div class="ur-section-header">
+          <span class="ur-section-badge ur-badge-orange">📁 File Drops</span>
+        </div>
+        <div class="ur-panel">
+          <div class="ur-panel-title">Suspicious Files Created <span class="ur-panel-sub">Sysmon EID 11 · Downloads / Temp / AppData</span></div>
+          <div id="ur-filedrops-body">
+            <div class="ur-empty">Run analysis to load file drop data</div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION 5: SIGMA HITS ══ -->
+        <div class="ur-section-header">
+          <span class="ur-section-badge ur-badge-purple">Σ Sigma Hits</span>
+        </div>
+        <div class="ur-panel">
+          <div class="ur-panel-title">Sigma Rule Detections <span class="ur-panel-sub">SUSPICIOUS_PARENT_CHAIN · REGISTRY_PERSISTENCE · UNSIGNED_EXECUTABLE</span></div>
+          <div id="ur-sigma-body">
+            <div class="ur-empty">Run analysis to load Sigma hits</div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION 6: YARA HITS ══ -->
+        <div class="ur-section-header">
+          <span class="ur-section-badge ur-badge-teal">🔬 YARA Hits</span>
+        </div>
+        <div class="ur-panel">
+          <div class="ur-panel-title">YARA / Behavioural Matches <span class="ur-panel-sub">Fileless malware · PowerShell cradles · Encoded commands</span></div>
+          <div id="ur-yara-body">
+            <div class="ur-empty">Run analysis to load YARA hits</div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION 7: ATTACK CHAIN ══ -->
+        <div class="ur-section-header">
+          <span class="ur-section-badge ur-badge-red">🔗 Attack Chain</span>
+        </div>
+        <div class="ur-panel">
+          <div class="ur-panel-title">Correlated Attack Sequences <span class="ur-panel-sub">Multi-stage chains with temporal ordering</span></div>
+          <div id="ur-chain-body">
+            <div class="ur-empty">Run analysis to load attack chains</div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION 8: UNIFIED RISK SCORE ══ -->
+        <div class="ur-section-header">
+          <span class="ur-section-badge ur-badge-yellow">🎯 Unified Risk Score</span>
+        </div>
+        <div class="ur-risk-card" id="ur-risk-card">
+          <div class="ur-risk-score-ring">
+            <svg viewBox="0 0 120 120" class="ur-risk-svg">
+              <circle cx="60" cy="60" r="50" class="ur-risk-track"/>
+              <circle cx="60" cy="60" r="50" class="ur-risk-fill" id="ur-risk-circle"
+                stroke-dasharray="314" stroke-dashoffset="314"/>
+            </svg>
+            <div class="ur-risk-center">
+              <div class="ur-risk-num" id="ur-risk-num">0</div>
+              <div class="ur-risk-denom">/100</div>
+            </div>
+          </div>
+          <div class="ur-risk-breakdown" id="ur-risk-breakdown">
+            <div class="ur-empty">Run analysis to load risk breakdown</div>
+          </div>
+        </div>
+
+        <!-- Active Response — replaces text recommendations with actionable buttons -->
+        <div class="ur-panel" style="margin-top:14px">
+          <div class="ur-panel-title">🛡 Active Response
+            <span class="ur-panel-sub">Take action against detected malicious entities</span>
+          </div>
+          <div id="pa-active-response" style="padding:4px 0"></div>
+        </div>
+
+        <!-- Hidden legacy container — kept so other code paths that read
+             pa-recommendations don't break, but no longer rendered visibly. -->
+        <div id="pa-recommendations" style="display:none"></div>
+
+      </div><!-- /pa-report -->
+    </div><!-- /page-perform -->
+
+
+    <!-- ══ UPLOAD ══ -->
+    <div class="page" id="page-upload">
+      <div class="page-header"><div class="page-title">📤 Upload Log File</div></div>
+      <div class="panel" style="max-width:600px;margin-bottom:20px">
+        <div class="panel-header"><div class="panel-title">Upload plain-text log file</div></div>
+        <div class="panel-body">
+          <div style="margin-bottom:14px;font-size:12px;color:var(--text-dim)">Accepts: Windows event exports, syslog, or any line-based log file. Results shown instantly below.</div>
+          <div style="margin-bottom:12px">
+            <label style="display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px">Category</label>
+            <select id="upload-cat">
+              <option value="application">Application</option><option value="system">System</option>
+              <option value="security">Security</option><option value="windows_update">Windows Update</option>
+            </select>
+          </div>
+          <div style="margin-bottom:16px">
+            <label style="display:block;font-size:11px;color:var(--text-dim);margin-bottom:5px">File</label>
+            <input type="file" id="upload-file" accept=".txt,.log,.csv" style="color:var(--text);font-size:12px">
+          </div>
+          <button class="btn btn-primary" id="upload-submit-btn" onclick="uploadFile()">📤 Upload</button>
+        </div>
+      </div>
+
+      <!-- ── Scan Results (shown after upload) ── -->
+      <div id="upload-scan-results" style="display:none">
+
+        <!-- Result header -->
+        <div class="az-result-header" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:24px">📄</span>
+            <div>
+              <div id="up-filename" style="font-size:15px;font-weight:800;color:var(--text-bright)"></div>
+              <div style="font-size:11px;color:var(--text-dim)">
+                <span id="up-total">0</span> entries parsed · Category: <span id="up-cat-label"></span>
+              </div>
+            </div>
+          </div>
+          <div id="up-risk-badge"></div>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="az-stat-grid" style="margin-bottom:16px">
+          <div class="az-stat-card az-stat-critical"><div class="az-stat-val" id="up-critical">0</div><div class="az-stat-lbl">Critical</div></div>
+          <div class="az-stat-card az-stat-error"><div class="az-stat-val" id="up-errors">0</div><div class="az-stat-lbl">Errors</div></div>
+          <div class="az-stat-card az-stat-warn"><div class="az-stat-val" id="up-warnings">0</div><div class="az-stat-lbl">Warnings</div></div>
+          <div class="az-stat-card az-stat-info"><div class="az-stat-val" id="up-info">0</div><div class="az-stat-lbl">Info</div></div>
+        </div>
+
+        <!-- Key findings -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header"><div class="panel-title">🚨 Key Findings</div></div>
+          <div class="panel-body"><div id="up-findings"></div></div>
+        </div>
+
+        <!-- Charts -->
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">📊 Level Distribution</div></div>
+            <div class="panel-body" style="height:220px;position:relative"><canvas id="up-chart-level"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">📅 Activity Timeline</div></div>
+            <div class="panel-body" style="height:220px;position:relative"><canvas id="up-chart-timeline"></canvas></div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header"><div class="panel-title">🕐 Hourly Activity — spikes shown in red</div></div>
+          <div class="panel-body" style="height:160px;position:relative"><canvas id="up-chart-hourly"></canvas></div>
+        </div>
+
+        <!-- Top errors + sources -->
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">🔴 Top Errors &amp; Critical Events</div></div>
+            <div class="panel-body" style="max-height:280px;overflow-y:auto"><div id="up-errors-table"></div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">📡 Top Sources</div></div>
+            <div class="panel-body" style="max-height:280px;overflow-y:auto"><div id="up-sources"></div></div>
+          </div>
+        </div>
+
+        <!-- PDF Download button -->
+        <div style="text-align:center;padding:24px 0 32px">
+          <button onclick="uploadDownloadPDF()" id="up-pdf-btn"
+            style="background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;border:none;padding:14px 36px;border-radius:12px;cursor:pointer;font-size:15px;font-weight:800;letter-spacing:.02em;box-shadow:0 4px 20px rgba(239,68,68,.4);transition:all .2s">
+            ⬇ Download PDF Report
+          </button>
+        </div>
+
+      </div><!-- /upload-scan-results -->
+    </div>
+
+    <!-- ══ LOGS ══ -->
+    <div class="page" id="page-logs">
+      <div class="page-header"><div><div class="page-title" id="logs-page-title">📋 Logs</div></div></div>
+      <div class="controls-row">
+        <select id="day-filter" onchange="onDayFilter(this.value)"><option value="">All Days</option></select>
+        <select id="level-filter" onchange="onLevelFilter(this.value)">
+          <option value="">All Levels</option>
+          <option value="ERROR">ERROR</option><option value="CRITICAL">CRITICAL</option>
+          <option value="WARNING">WARNING</option><option value="INFO">INFO</option>
+          <option value="FAILURE">FAILURE</option><option value="SUCCESS">SUCCESS</option>
+        </select>
+        <span id="logs-info" style="color:var(--text-dim);font-size:11px;margin-left:6px"></span>
+      </div>
+      <div class="panel" style="overflow-x:auto">
+        <table class="log-table">
+          <thead><tr><th>Timestamp</th><th>Level</th><th>Source</th><th>Event ID</th><th>Message</th><th style="width:46px;text-align:center" title="AI Explain">🤖</th></tr></thead>
+          <tbody id="logs-tbody"></tbody>
+        </table>
+      </div>
+      <div class="pagination" id="logs-pagination"></div>
+    </div>
+
+    <!-- ══ FREQUENCY ══ -->
+    <div class="page" id="page-frequency">
+      <div class="page-header"><div class="page-title">📈 Frequency Analysis</div></div>
+      <div class="controls-row">
+        <select id="freq-cat" onchange="loadFrequency()">
+          <option value="application">Application</option><option value="system">System</option>
+          <option value="security">Security</option><option value="windows_update">Windows Update</option>
+        </select>
+        <input type="text" id="freq-date" placeholder="YYYY-MM-DD (optional)" style="width:180px" onchange="loadFrequency()">
+        <button class="btn btn-primary" onclick="loadFrequency()">▶ Run</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Error Frequency by Source</div>
+          <span id="freq-he-method" style="font-size:10px;color:var(--text-dim);font-family:var(--mono)"></span>
+        </div>
+        <div class="panel-body"><canvas id="freq-chart" height="300"></canvas></div>
+        <div id="freq-results"></div>
+      </div>
+    </div>
+
+
+    <!-- ══ TIME-SERIES ANALYSIS ══ -->
+    <div class="page" id="page-timeseries">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📉 Time-Series Analysis</div>
+          <div class="page-subtitle">Login attempts · Error spikes · Shutdown patterns · Network blocks · Privilege escalations</div>
+        </div>
+        <button class="btn btn-primary" onclick="loadTimeSeries()" id="ts-refresh-btn">⟳ Refresh</button>
+      </div>
+
+      <!-- Loading -->
+      <div id="ts-loading" style="display:none;align-items:center;justify-content:center;padding:60px;gap:16px;flex-direction:column">
+        <div class="spinner"></div>
+        <div style="color:#64748b;font-size:13px">Analyzing time-series patterns…</div>
+      </div>
+
+      <!-- Error -->
+      <div id="ts-error" style="display:none;color:#ef4444;padding:12px 16px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;margin-bottom:14px;font-size:13px"></div>
+
+      <!-- Content -->
+      <div id="ts-content" style="display:none">
+
+        <!-- Summary cards -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+          <div class="panel ts-summary-card" id="ts-card-logins"><div class="panel-body" style="padding:16px;text-align:center">—</div></div>
+          <div class="panel ts-summary-card" id="ts-card-errors"><div class="panel-body" style="padding:16px;text-align:center">—</div></div>
+          <div class="panel ts-summary-card" id="ts-card-shutdowns"><div class="panel-body" style="padding:16px;text-align:center">—</div></div>
+          <div class="panel ts-summary-card" id="ts-card-anomalies"><div class="panel-body" style="padding:16px;text-align:center">—</div></div>
+        </div>
+
+        <!-- ── 1. Failed Logins ───────────────────────────────────────── -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header">
+            <div class="panel-title">🔐 Failed Login Attempts Over Time</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <select id="ts-interval-logins" style="font-size:11px;background:var(--bg2);border:1px solid var(--border1);color:var(--text-main);padding:3px 8px;border-radius:5px">
+                <option value="10m">10 min</option>
+                <option value="30m">30 min</option>
+                <option value="1h" selected>1 hour</option>
+                <option value="6h">6 hours</option>
+                <option value="1d">1 day</option>
+              </select>
+              <input type="date" id="ts-date-logins" style="font-size:11px;background:var(--bg2);border:1px solid var(--border1);color:var(--text-main);padding:3px 8px;border-radius:5px">
+              <button id="ts-run-logins" class="btn btn-primary" onclick="tsRefreshStream('logins')" style="font-size:11px;padding:4px 12px">▶ Run</button>
+            </div>
+          </div>
+          <div class="panel-body" style="height:220px;position:relative"><canvas id="ts-chart-logins"></canvas></div>
+          <div id="ts-stream-logins" style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.05)"></div>
+        </div>
+
+        <!-- ── 2. Error Spikes ────────────────────────────────────────── -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header">
+            <div class="panel-title">🔥 Error Spikes Over Time</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <select id="ts-cat-errors" style="font-size:11px;background:var(--bg2);border:1px solid var(--border1);color:var(--text-main);padding:3px 8px;border-radius:5px">
+                <option value="application">Application</option>
+                <option value="system">System</option>
+                <option value="security" selected>Security</option>
+                <option value="windows_update">Windows Update</option>
+              </select>
+              <select id="ts-interval-errors" style="font-size:11px;background:var(--bg2);border:1px solid var(--border1);color:var(--text-main);padding:3px 8px;border-radius:5px">
+                <option value="30m">30 min</option>
+                <option value="1h" selected>1 hour</option>
+                <option value="6h">6 hours</option>
+                <option value="1d">1 day</option>
+              </select>
+              <button id="ts-run-errors" class="btn btn-primary" onclick="tsRefreshStream('errors')" style="font-size:11px;padding:4px 12px">▶ Run</button>
+            </div>
+          </div>
+          <div class="panel-body" style="height:220px;position:relative"><canvas id="ts-chart-errors"></canvas></div>
+          <div id="ts-stream-errors" style="padding:12px 16px;border-top:1px solid rgba(255,255,255,.05)"></div>
+        </div>
+
+        <!-- ── 3 & 4. Shutdowns + Network side by side ───────────────── -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">⚡ Shutdown / Restart Patterns</div>
+              <button id="ts-run-shutdowns" class="btn btn-primary" onclick="tsRefreshStream('shutdowns')" style="font-size:11px;padding:4px 12px">▶ Run</button>
+            </div>
+            <div class="panel-body" style="height:200px;position:relative"><canvas id="ts-chart-shutdowns"></canvas></div>
+            <div id="ts-stream-shutdowns" style="padding:10px 14px;border-top:1px solid rgba(255,255,255,.05)"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">🌐 Network Blocks (EID 5152/5157)</div></div>
+            <div class="panel-body" style="height:200px;position:relative"><canvas id="ts-chart-network"></canvas></div>
+            <div id="ts-stream-network" style="padding:10px 14px;border-top:1px solid rgba(255,255,255,.05)"></div>
+          </div>
+        </div>
+
+        <!-- ── 5. Privilege escalations ────────────────────────────────── -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header"><div class="panel-title">⬆ Privilege Escalation Events (EID 4672/4673)</div></div>
+          <div class="panel-body" style="height:180px;position:relative"><canvas id="ts-chart-privileges"></canvas></div>
+          <div id="ts-stream-privileges" style="padding:10px 14px;border-top:1px solid rgba(255,255,255,.05)"></div>
+        </div>
+
+        <!-- ── Custom event ID query ────────────────────────────────────── -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header"><div class="panel-title">🔍 Custom Event ID / Keyword Query</div></div>
+          <div class="panel-body">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+              <input id="ts-custom-eid" type="number" placeholder="Event ID (e.g. 4625)" style="width:160px;background:var(--bg2);border:1px solid var(--border1);color:var(--text-main);padding:6px 10px;border-radius:6px;font-size:12px">
+              <span style="color:#475569;font-size:11px">or</span>
+              <input id="ts-custom-kw" type="text" placeholder="Keyword (e.g. Defender)" style="width:180px;background:var(--bg2);border:1px solid var(--border1);color:var(--text-main);padding:6px 10px;border-radius:6px;font-size:12px">
+              <select id="ts-custom-cat" style="font-size:11px;background:var(--bg2);border:1px solid var(--border1);color:var(--text-main);padding:6px 8px;border-radius:6px">
+                <option value="security">Security</option>
+                <option value="system">System</option>
+                <option value="application">Application</option>
+              </select>
+              <select id="ts-custom-interval" style="font-size:11px;background:var(--bg2);border:1px solid var(--border1);color:var(--text-main);padding:6px 8px;border-radius:6px">
+                <option value="10m">10 min</option>
+                <option value="30m">30 min</option>
+                <option value="1h" selected>1 hour</option>
+                <option value="6h">6 hours</option>
+                <option value="1d">1 day</option>
+              </select>
+              <button id="ts-custom-run" class="btn btn-primary" onclick="tsRunCustom()">▶ Run</button>
+            </div>
+            <div id="ts-custom-result" style="display:none">
+              <div id="ts-custom-title" style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px"></div>
+              <div style="height:200px;position:relative"><canvas id="ts-chart-custom"></canvas></div>
+              <div id="ts-custom-stats" style="padding:10px 0;margin-top:8px;border-top:1px solid rgba(255,255,255,.05)"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Anomaly log ───────────────────────────────────────────────── -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header">
+            <div class="panel-title">⚠ Anomaly Detection Log</div>
+            <div style="font-size:11px;color:#64748b">Buckets with Z-score &gt; 2.5 across all streams</div>
+          </div>
+          <div id="ts-anomaly-log" style="padding:0"></div>
+        </div>
+
+        <!-- ── CLI-style event ticker ─────────────────────────────────────── -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">📟 Event Frequency Ticker</div>
+            <div style="font-size:10px;color:#475569;font-family:monospace">time → event type → bar → count</div>
+          </div>
+          <div id="ts-event-ticker" style="font-family:monospace;font-size:11px;padding:14px 16px;max-height:360px;overflow-y:auto;line-height:1.8;background:rgba(0,0,0,.15)"></div>
+        </div>
+
+      </div><!-- /ts-content -->
+    </div>
+    <!-- ══ END TIME-SERIES ══ -->
+
+    <!-- ══ ANOMALY ══ -->
+    <div class="page" id="page-anomaly">
+      <div class="page-header"><div class="page-title">🚨 Anomaly Detection</div></div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Daily Error Z-Score (CKKS encrypted)</div></div>
+        <div class="panel-body"><canvas id="anomaly-chart" height="220"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><div class="panel-title">Flagged Anomalies</div></div>
+        <div class="panel-body" id="anomaly-results"><div style="color:var(--text-dim)">Loading…</div></div>
+      </div>
+    </div>
+
+
+    <!-- ══ FOLDER LOCKER ══ -->
+    <div class="page" id="page-locker">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🔒 Folder Lock</div>
+          <div class="page-subtitle">Password-protect folders — folder is completely hidden when locked, unlock from dashboard</div>
+        </div>
+        <button class="btn btn-primary" onclick="showLockerModal()" style="gap:6px;display:flex;align-items:center">📁 Lock Folder</button>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="locker-tabs" id="locker-tab-bar">
+        <button class="locker-tab active" id="ltab-folders"  onclick="switchLockerTab('folders',this)">📁 Locked Folders</button>
+        <button class="locker-tab"        id="ltab-captures" onclick="switchLockerTab('captures',this)">📸 Captures <span id="ltab-cap-count" style="margin-left:4px;background:rgba(239,68,68,.2);color:#f87171;padding:1px 6px;border-radius:8px;font-size:10px">0</span></button>
+        <button class="locker-tab"        id="ltab-settings" onclick="switchLockerTab('settings',this)">⚙ Settings</button>
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px" id="locker-stats-row">
+        <div class="intruder-stat"><div class="intruder-stat-val" id="lstat-folders" style="color:var(--emerald)">—</div><div class="intruder-stat-lbl">Locked Folders</div></div>
+        <div class="intruder-stat"><div class="intruder-stat-val" id="lstat-failed" style="color:#f87171">—</div><div class="intruder-stat-lbl">Failed Unlocks</div></div>
+        <div class="intruder-stat"><div class="intruder-stat-val" id="lstat-captures" style="color:var(--amber)">—</div><div class="intruder-stat-lbl">Unreviewed Captures</div></div>
+      </div>
+
+      <!-- Tab panels -->
+      <div id="locker-panel-folders">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">📁 Password-Protected Folders</div>
+            <button class="btn" style="font-size:11px" onclick="showLockerModal()">＋ Add Folder</button>
+          </div>
+          <div id="locker-folders-list" style="padding:0"></div>
+        </div>
+      </div>
+
+      <div id="locker-panel-captures" style="display:none">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">📸 Intruder Captures — Folder Unlock Failures</div>
+            <span id="locker-cap-count" style="font-size:11px;color:var(--text-dim)">0 captures</span>
+          </div>
+          <div id="locker-captures-gallery" style="padding:20px"></div>
+        </div>
+      </div>
+
+      <div id="locker-panel-settings" style="display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <!-- Delete image with credentials -->
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">🗑 Delete Capture Image</div></div>
+            <div class="panel-body">
+              <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">Select a capture to delete. Requires your dashboard password as confirmation.</p>
+              <div class="form-group-locker">
+                <label class="locker-label">Select Capture</label>
+                <select id="del-cap-select" class="locker-input">
+                  <option value="">— Select capture —</option>
+                </select>
+              </div>
+              <div class="form-group-locker">
+                <label class="locker-label">Dashboard Password</label>
+                <input type="password" id="del-cap-password" class="locker-input" placeholder="Enter your dashboard password">
+              </div>
+              <button class="locker-danger-btn" onclick="deleteSelectedCapture()">🗑 Delete Selected Image</button>
+            </div>
+          </div>
+          <!-- Emergency restore -->
+          <div class="panel" style="border-color:rgba(245,158,11,.3)">
+            <div class="panel-header"><div class="panel-title">🔄 Emergency Restore</div></div>
+            <div class="panel-body">
+              <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">
+                If folders are stuck hidden (e.g. after reinstalling the app), click below to restore all of them back to their original locations.
+              </p>
+              <button class="locker-danger-btn" onclick="restoreAllFolders()"
+                style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4);color:var(--amber)">
+                🔄 Restore All Hidden Folders
+              </button>
+            </div>
+          </div>
+
+          <!-- Clear all captures -->
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">🧹 Bulk Actions</div></div>
+            <div class="panel-body">
+              <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;line-height:1.6">Bulk operations on capture records. All actions require password confirmation.</p>
+              <div class="form-group-locker">
+                <label class="locker-label">Dashboard Password</label>
+                <input type="password" id="bulk-password" class="locker-input" placeholder="Enter your dashboard password">
+              </div>
+              <button class="locker-danger-btn" onclick="dismissAllCaptures()" style="background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--amber);margin-bottom:8px">✓ Mark All Reviewed</button>
+              <button class="locker-danger-btn" onclick="deleteAllCaptures()">🗑 Delete All Captures</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /page-locker -->
+
+    <!-- ══ INTRUDER WATCH ══ -->
+    <div class="page" id="page-intruder">
+      <div class="page-header">
+        <div>
+          <div class="page-title">👁 Intruder Watch</div>
+          <div class="page-subtitle">Webcam captures from failed login attempts — real-time intruder detection</div>
+          <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+            <span style="font-size:10px;padding:3px 10px;border-radius:10px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);color:var(--emerald)">
+              🔍 Watching Windows EID 4625 every 5s
+            </span>
+            <span style="font-size:10px;padding:3px 10px;border-radius:10px;background:rgba(26,140,255,.1);border:1px solid rgba(26,140,255,.2);color:var(--sky-bright)">
+              📸 Screenshot on failed Windows login
+            </span>
+            <span style="font-size:10px;padding:3px 10px;border-radius:10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);color:var(--amber)">
+              ⚠ Requires Administrator + pywin32
+            </span>
+          </div>
+        </div>
+        <button class="btn" onclick="loadIntruderData()" style="font-size:11px">↻ Refresh</button>
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+        <div class="intruder-stat" id="istat-failed">
+          <div class="intruder-stat-val" style="color:#f87171">—</div>
+          <div class="intruder-stat-lbl">Failed Attempts</div>
+        </div>
+        <div class="intruder-stat" id="istat-captures">
+          <div class="intruder-stat-val" style="color:#fcd34d">—</div>
+          <div class="intruder-stat-lbl">Photos Captured</div>
+        </div>
+        <div class="intruder-stat" id="istat-unreviewed">
+          <div class="intruder-stat-val" style="color:#f97316">—</div>
+          <div class="intruder-stat-lbl">Unreviewed</div>
+        </div>
+        <div class="intruder-stat" id="istat-success">
+          <div class="intruder-stat-val" style="color:#4ade80">—</div>
+          <div class="intruder-stat-lbl">Successful Logins</div>
+        </div>
+      </div>
+
+      <!-- Top attackers -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px" id="intruder-top-row">
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">🌐 Top Attacker IPs</div></div>
+          <div class="panel-body" id="intruder-top-ips" style="padding:0">
+            <div style="padding:14px;color:var(--text-dim);font-size:12px">No data yet</div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">👤 Tried Usernames</div></div>
+          <div class="panel-body" id="intruder-top-users" style="padding:0">
+            <div style="padding:14px;color:var(--text-dim);font-size:12px">No data yet</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Capture gallery -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📸 Intruder Photo Gallery</div>
+          <span id="intruder-capture-count" style="font-size:11px;color:var(--text-dim)">0 captures</span>
+        </div>
+        <div id="intruder-gallery" style="padding:20px">
+          <div style="text-align:center;padding:40px;color:var(--text-dim)">
+            <div style="font-size:48px;margin-bottom:12px">📷</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text-bright);margin-bottom:6px">No captures yet</div>
+            <div style="font-size:12px">Webcam photos will appear here after 3+ failed login attempts</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /page-intruder -->
+
+    <!-- ══ REPORTS ══ -->
+    <div class="page" id="page-reports">
+      <div class="page-header">
+        <div>
+          <div class="page-title">📄 Security Reports</div>
+          <div class="page-subtitle">Generate, view and export comprehensive security reports from live data</div>
+        </div>
+        <button class="btn btn-primary" onclick="showReportModal()" style="gap:6px;display:flex;align-items:center">
+          ＋ Generate Report
+        </button>
+      </div>
+
+      <!-- Quick generate cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px">
+        <div class="rpt-quick-card" onclick="generateReport('security')">
+          <div class="rpt-quick-icon" style="background:rgba(239,68,68,.12);color:#f87171">🛡</div>
+          <div class="rpt-quick-title">Security Audit</div>
+          <div class="rpt-quick-sub">Threats, logons, EID analysis</div>
+        </div>
+        <div class="rpt-quick-card" onclick="generateReport('performance')">
+          <div class="rpt-quick-icon" style="background:rgba(16,185,129,.12);color:#4ade80">📈</div>
+          <div class="rpt-quick-title">Performance</div>
+          <div class="rpt-quick-sub">CPU, RAM, disk metrics</div>
+        </div>
+        <div class="rpt-quick-card" onclick="generateReport('compliance')">
+          <div class="rpt-quick-icon" style="background:rgba(6,182,212,.12);color:#22d3ee">✅</div>
+          <div class="rpt-quick-title">Compliance</div>
+          <div class="rpt-quick-sub">NIST / CIS benchmarks</div>
+        </div>
+        <div class="rpt-quick-card" onclick="generateReport('daily')">
+          <div class="rpt-quick-icon" style="background:rgba(245,158,11,.12);color:#fcd34d">🕐</div>
+          <div class="rpt-quick-title">Daily Summary</div>
+          <div class="rpt-quick-sub">24-hour activity snapshot</div>
+        </div>
+      </div>
+
+      <!-- Report history table -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">📋 Generated Reports</div>
+          <span id="rpt-count-label" style="font-size:11px;color:var(--text-dim)">No reports yet</span>
+        </div>
+        <div id="rpt-table-wrap" style="padding:0">
+          <div style="padding:40px;text-align:center;color:var(--text-dim)">
+            <div style="font-size:40px;margin-bottom:10px">📄</div>
+            <div style="font-size:14px;font-weight:700;color:var(--text-bright);margin-bottom:6px">No reports generated yet</div>
+            <div style="font-size:12px">Click "Generate Report" or use the quick cards above</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Export format section -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px">
+        <div class="rpt-export-card">
+          <div style="font-size:28px;margin-bottom:8px">🌐</div>
+          <div class="rpt-export-title">HTML Report</div>
+          <div class="rpt-export-sub">Full styled dark-theme report, opens in browser</div>
+          <button class="btn" style="margin-top:10px;width:100%;font-size:11px" onclick="exportLatest('html')">Export HTML</button>
+        </div>
+        <div class="rpt-export-card">
+          <div style="font-size:28px;margin-bottom:8px">📊</div>
+          <div class="rpt-export-title">CSV Export</div>
+          <div class="rpt-export-sub">Spreadsheet format with all log stats and errors</div>
+          <button class="btn" style="margin-top:10px;width:100%;font-size:11px" onclick="exportLatest('csv')">Export CSV</button>
+        </div>
+        <div class="rpt-export-card">
+          <div style="font-size:28px;margin-bottom:8px">📦</div>
+          <div class="rpt-export-title">JSON Export</div>
+          <div class="rpt-export-sub">Machine-readable full report data</div>
+          <button class="btn" style="margin-top:10px;width:100%;font-size:11px" onclick="exportLatest('json')">Export JSON</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ NETWORK ANALYZER ══ -->
+    <div class="page" id="page-network">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🌐 Network Monitoring</div>
+          <div class="page-subtitle">Real-time traffic analysis and security monitoring</div>
+        </div>
+        <div class="net-controls">
+          <span class="net-live-badge">⬤ LIVE</span>
+          <button class="btn btn-primary" onclick="loadConnections();loadBandwidth();loadTopProcesses();loadSecurityCorrelations();loadInterfaces();">🔄 Refresh</button>
+          <span id="net-psutil-tip" style="font-size:11px;color:var(--red)"></span>
+        </div>
+      </div>
+
+      <div class="net-stat-row">
+        <div class="net-stat-pill recv"><div class="pill-val" id="net-recv-val">—</div><div class="pill-lbl">↓ Download/s</div></div>
+        <div class="net-stat-pill sent"><div class="pill-val" id="net-sent-val">—</div><div class="pill-lbl">↑ Upload/s</div></div>
+        <div class="net-stat-pill conn"><div class="pill-val" id="net-conn-val">—</div><div class="pill-lbl">Connections</div></div>
+        <div class="net-stat-pill"><div class="pill-val" id="net-pkts-val">—</div><div class="pill-lbl">Packets/s</div></div>
+        <div class="net-stat-pill err"><div class="pill-val" id="net-err-val">0</div><div class="pill-lbl">Errors</div></div>
+        <div class="net-stat-pill" style="border-color:rgba(245,158,11,.25)">
+          <div class="pill-val" id="net-drops-val" style="color:var(--amber)">0</div><div class="pill-lbl">Drops</div>
+        </div>
+      </div>
+
+      <div class="net-tabs">
+        <div class="net-tab active" data-tab="packets"    onclick="switchNetTab('packets')">📡 Packet Flow</div>
+        <div class="net-tab"        data-tab="topology"   onclick="switchNetTab('topology')">🗺 Topology</div>
+        <div class="net-tab"        data-tab="bandwidth"  onclick="switchNetTab('bandwidth')">📊 Bandwidth</div>
+        <div class="net-tab"        data-tab="processes"  onclick="switchNetTab('processes')">🖥 Processes</div>
+        <div class="net-tab"        data-tab="interfaces" onclick="switchNetTab('interfaces')">🔌 Interfaces</div>
+        <div class="net-tab"        data-tab="anomaly"    onclick="switchNetTab('anomaly')">🧠 Anomaly Detection</div>
+      </div>
+
+      <div class="net-tab-panel active" id="net-panel-packets">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">📡 Real-Time Packet Flow</div>
+            <span style="font-size:10px;color:var(--text-dim)">1-second resolution</span>
+          </div>
+          <div class="panel-body" style="padding-bottom:8px">
+            <div style="position:relative;height:240px">
+              <canvas id="packet-flow-chart"></canvas>
+              <div id="packet-particles" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="net-tab-panel" id="net-panel-topology">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">🗺 Live Connection Topology</div>
+            <span style="font-size:10px;color:var(--text-dim)">🟢 Local · 🔵 Private · 🔴 Public</span>
+          </div>
+          <div class="panel-body" style="padding:0">
+            <svg id="conn-map-svg" style="width:100%;height:360px"></svg>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">🔗 Active Network Connections</div>
+            <span id="conn-count-badge" style="font-size:11px;color:var(--text-dim)">Loading…</span>
+          </div>
+          <div class="panel-body" style="padding:0;max-height:500px;overflow-y:auto">
+            <div class="conn-table-header">
+              <span>Protocol</span><span>Local Address</span><span>Remote Address</span>
+              <span>Status</span><span>Encryption</span><span>Process</span>
+            </div>
+            <div id="conn-list-body">
+              <div style="color:var(--text-dim);padding:20px;text-align:center;font-size:12px">Loading…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="net-tab-panel" id="net-panel-bandwidth">
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">📊 Bandwidth per NIC</div></div>
+          <div class="panel-body"><div id="bw-bar-list"><div style="color:var(--text-dim)">Measuring…</div></div></div>
+        </div>
+      </div>
+
+      <div class="net-tab-panel" id="net-panel-processes">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">🖥 Processes by Network Activity</div>
+            <button class="btn" style="font-size:11px" onclick="loadTopProcesses()">↻ Refresh</button>
+          </div>
+          <div class="panel-body" style="padding:0;overflow-x:auto">
+            <div id="proc-list"><div style="color:var(--text-dim);font-size:12px;padding:16px">Loading…</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="net-tab-panel" id="net-panel-interfaces">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">🔌 Network Interfaces</div>
+            <button class="btn" style="font-size:11px" onclick="loadInterfaces()">↻ Refresh</button>
+          </div>
+          <div class="panel-body">
+            <div class="iface-grid" id="iface-grid"><div style="color:var(--text-dim)">Loading…</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="net-tab-panel" id="net-panel-anomaly">
+
+        <!-- Engine info header -->
+        <div class="anom-engine-bar">
+          <div class="anom-engine-info">
+            <div class="anom-engine-dot" id="anom-engine-dot"></div>
+            <span class="anom-engine-label">Secure Eye Network Anomaly Engine</span>
+            <span class="anom-engine-methods" id="anom-method-list">10 detection methods active</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="anom-last-scan" style="font-size:10px;color:var(--text-dim);font-family:var(--mono)">Not scanned</span>
+            <button class="btn btn-primary" id="anom-scan-btn" onclick="runAnomalyScan()" style="font-size:11px;gap:5px;display:flex;align-items:center">
+              🔍 Scan Now
+            </button>
+            <button class="btn" id="anom-auto-btn" onclick="toggleAnomalyAuto()" style="font-size:11px" title="Toggle auto-scan every 30s">
+              ▶ Auto
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div class="anom-stats-row" id="anom-stats-row">
+          <div class="anom-stat-card" id="astat-conns">
+            <div class="anom-stat-val">—</div>
+            <div class="anom-stat-lbl">Active Connections</div>
+          </div>
+          <div class="anom-stat-card" id="astat-established">
+            <div class="anom-stat-val">—</div>
+            <div class="anom-stat-lbl">Established</div>
+          </div>
+          <div class="anom-stat-card" id="astat-listen">
+            <div class="anom-stat-val">—</div>
+            <div class="anom-stat-lbl">Listening Ports</div>
+          </div>
+          <div class="anom-stat-card" id="astat-syn">
+            <div class="anom-stat-val">—</div>
+            <div class="anom-stat-lbl">SYN (half-open)</div>
+          </div>
+          <div class="anom-stat-card" id="astat-timewait">
+            <div class="anom-stat-val">—</div>
+            <div class="anom-stat-lbl">TIME_WAIT</div>
+          </div>
+          <div class="anom-stat-card" id="astat-closewait">
+            <div class="anom-stat-val">—</div>
+            <div class="anom-stat-lbl">CLOSE_WAIT</div>
+          </div>
+        </div>
+
+        <!-- Results area -->
+        <div class="anom-results-wrap" id="anom-results-wrap">
+          <!-- Idle state -->
+          <div class="anom-idle" id="anom-idle">
+            <div class="anom-idle-icon">🛰</div>
+            <div class="anom-idle-title">Anomaly Scanner Ready</div>
+            <div class="anom-idle-sub">
+              Click <strong>Scan Now</strong> to inspect your live network connections.<br>
+              The engine checks for port scans, SYN floods, data exfiltration, beaconing,<br>
+              suspicious processes, threat ports, and traffic spikes.
+            </div>
+            <div class="anom-method-chips">
+              <span class="anom-chip">🚨 30+ Threat Ports</span>
+              <span class="anom-chip">🔍 Port Scan Detection</span>
+              <span class="anom-chip">🌊 SYN Flood</span>
+              <span class="anom-chip">📡 C2 Beaconing</span>
+              <span class="anom-chip">💸 Data Exfil Spike</span>
+              <span class="anom-chip">⚙ Unknown Processes</span>
+              <span class="anom-chip">🌊 DDoS Detection</span>
+              <span class="anom-chip">📈 Connection Baseline</span>
+              <span class="anom-chip">❌ Packet Errors</span>
+              <span class="anom-chip">⚠ CLOSE_WAIT Buildup</span>
+            </div>
+          </div>
+
+          <!-- Scanning state -->
+          <div class="anom-scanning" id="anom-scanning" style="display:none">
+            <div class="anom-scan-ring"></div>
+            <div class="anom-scan-title">Scanning network…</div>
+            <div class="anom-scan-steps" id="anom-scan-steps">Analysing active connections…</div>
+          </div>
+
+          <!-- Healthy state -->
+          <div class="anom-healthy" id="anom-healthy" style="display:none">
+            <div class="anom-healthy-icon">🛡</div>
+            <div class="anom-healthy-title">Network Clear</div>
+            <div class="anom-healthy-sub">No anomalies detected in this scan.<br>All connection patterns appear normal.</div>
+          </div>
+
+          <!-- Anomaly cards -->
+          <div id="anom-card-list" style="display:none"></div>
+        </div>
+
+        <!-- History panel -->
+        <div class="panel" style="margin-top:16px">
+          <div class="panel-header">
+            <div class="panel-title">📜 Detection History</div>
+            <span id="anom-history-count" style="font-size:11px;color:var(--text-dim)">0 events</span>
+          </div>
+          <div id="anom-history-list" style="max-height:260px;overflow-y:auto;padding:0">
+            <div style="padding:20px;text-align:center;color:var(--text-dim);font-size:12px">Run a scan to populate history</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /page-network -->
+
+    <!-- ══ AI CHAT ══ -->
+    <div class="page" id="page-chat">
+      <div class="chat-page-header">
+        <div class="chat-page-brand">
+          <div class="chat-page-avatar">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2 L21 6 L21 13 C21 17.5 17 21 12 22 C7 21 3 17.5 3 13 L3 6 Z"
+                fill="rgba(26,140,255,.2)" stroke="#4da6ff" stroke-width="1.5"/>
+              <rect x="9" y="13" width="6" height="5" rx="1.5" fill="#4da6ff"/>
+              <path d="M10 13 L10 11 C10 9.3 14 9.3 14 11 L14 13"
+                stroke="#7dd3fc" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div class="chat-page-title">Secure Eye AI</div>
+          </div>
+        </div>
+        <div class="chat-mode-pill offline" id="chat-mode-pill">🟢 Ready</div>
+      </div>
+
+      <div class="chat-body">
+        <div class="chat-sidebar">
+          <div>
+            <div class="chat-sidebar-section-title">📊 Log Context</div>
+            <div class="chat-ctx-strip" id="chat-ctx-strip">
+              <div class="ctx-chip"><span class="ctx-chip-label">Loading…</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="chat-sidebar-section-title">💡 Quick Questions</div>
+            <div class="chat-suggestions" id="chat-suggestions"></div>
+          </div>
+        </div>
+        <div class="chat-main">
+          <div class="chat-messages" id="chat-messages"></div>
+          <div class="chat-input-bar">
+            <div class="chat-input-wrap">
+              <textarea id="chat-input"
+                placeholder="Ask about errors, Event IDs, security threats…"
+                rows="1"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"
+                oninput="autoResize(this)"></textarea>
+            </div>
+            <button class="chat-send-btn" id="chat-send-btn" onclick="sendMessage()">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════════════════════
+         LOG ANALYZER PAGE — isolated, no main DB writes
+    ════════════════════════════════════════════════════════════ -->
+    <div class="page" id="page-analyzer">
+      <div class="page-header">
+        <div>
+          <div class="page-title">🔬 Log Analyzer</div>
+          <div class="page-subtitle">Upload & analyze any log file instantly — results only, nothing saved to database</div>
+        </div>
+      </div>
+
+      <!-- Upload zone -->
+      <div class="az-upload-card" id="analyzer-drop-zone">
+        <div class="az-upload-icon">📁</div>
+        <div class="az-upload-text">Drop a log file here or click to select</div>
+        <div class="az-upload-sub">Windows Event Logs · Syslog · Any line-based log file · Max 50,000 lines</div>
+        <label class="az-file-label">
+          <input type="file" id="analyzer-file" accept=".txt,.log,.csv,.evtx" style="display:none">
+          Choose File
+        </label>
+        <div id="az-selected-info" style="display:none;align-items:center;gap:8px;margin-top:8px">
+          <span style="font-size:18px">📄</span>
+          <span id="az-selected-name" style="color:var(--sky-bright);font-size:13px;font-weight:600"></span>
+        </div>
+        <button class="az-analyze-btn" id="analyzer-btn" onclick="analyzerUpload()">🔍 Analyze File</button>
+      </div>
+
+      <!-- Loading -->
+      <div id="analyzer-loading" style="display:none;flex-direction:column;align-items:center;padding:60px;gap:16px">
+        <div class="az-spinner"></div>
+        <div style="color:var(--text-dim);font-size:14px">Parsing and analyzing log file…</div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="analyzer-empty" style="display:none;flex-direction:column;align-items:center;padding:60px;gap:12px">
+        <div style="font-size:48px">📭</div>
+        <div style="color:var(--text-bright);font-size:16px;font-weight:700">No results</div>
+        <div style="color:var(--text-dim);font-size:13px">Upload a log file to see analysis</div>
+      </div>
+
+      <!-- Results -->
+      <div id="analyzer-results" style="display:none">
+
+        <!-- File header bar -->
+        <div class="az-result-header">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="font-size:22px">📄</span>
+            <div>
+              <div id="az-filename" style="font-size:15px;font-weight:800;color:var(--text-bright)">file.log</div>
+              <div style="font-size:11px;color:var(--text-dim)">
+                <span id="az-total">0</span> entries parsed from <span id="az-rawlines">0</span> lines
+              </div>
+            </div>
+          </div>
+          <div id="az-risk"></div>
+        </div>
+
+        <!-- Level stat cards -->
+        <div class="az-stat-grid">
+          <div class="az-stat-card az-stat-critical">
+            <div class="az-stat-val" id="az-critical">0</div>
+            <div class="az-stat-lbl">Critical</div>
+          </div>
+          <div class="az-stat-card az-stat-error">
+            <div class="az-stat-val" id="az-errors">0</div>
+            <div class="az-stat-lbl">Errors</div>
+          </div>
+          <div class="az-stat-card az-stat-warn">
+            <div class="az-stat-val" id="az-warnings">0</div>
+            <div class="az-stat-lbl">Warnings</div>
+          </div>
+          <div class="az-stat-card az-stat-info">
+            <div class="az-stat-val" id="az-info">0</div>
+            <div class="az-stat-lbl">Info</div>
+          </div>
+        </div>
+
+        <!-- Key Findings -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header"><div class="panel-title">🚨 Key Findings</div></div>
+          <div class="panel-body">
+            <div id="az-findings"></div>
+          </div>
+        </div>
+
+        <!-- Charts row -->
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:16px">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">📊 Log Level Distribution</div></div>
+            <div class="panel-body" style="height:240px;position:relative">
+              <canvas id="az-chart-level"></canvas>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">📅 Activity Timeline</div></div>
+            <div class="panel-body" style="height:240px;position:relative">
+              <canvas id="az-chart-timeline"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hourly heatmap -->
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-header"><div class="panel-title">🕐 Hourly Activity (24h) — Red = high activity spikes</div></div>
+          <div class="panel-body" style="height:180px;position:relative">
+            <canvas id="az-chart-hourly"></canvas>
+          </div>
+        </div>
+
+        <!-- Bottom row: errors + sources -->
+        <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px">
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">🔴 Top Errors & Critical Events</div></div>
+            <div class="panel-body" style="max-height:300px;overflow-y:auto">
+              <div id="az-errors-table"></div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">📡 Top Sources</div></div>
+            <div class="panel-body" style="max-height:300px;overflow-y:auto">
+              <div id="az-sources"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Analyze another -->
+        <div style="text-align:center;padding:20px 0 8px">
+          <button onclick="document.getElementById('analyzer-results').style.display='none';document.getElementById('analyzer-drop-zone').scrollIntoView({behavior:'smooth'})"
+            style="background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--text-dim);padding:9px 22px;border-radius:8px;cursor:pointer;font-size:13px">
+            🔄 Analyze Another File
+          </button>
+        </div>
+
+      </div><!-- /results -->
+    </div><!-- /page-analyzer -->
+
+  </main>
+</div><!-- /app-shell -->
+
+<div id="toast"></div>
+
+<script src="/static/js/api.js?v=1773255695"></script>
+<script src="/static/js/navigation.js?v=1773255695"></script>
+<script src="/static/js/dashboard.js?v=1773255695"></script>
+<script src="/static/js/logs.js?v=1776014125"></script>
+<script src="/static/js/analysis.js?v=1773255695"></script>
+<script src="/static/js/reports.js?v=1773255695"></script>
+<script src="/static/js/intruder.js?v=1773255695"></script>
+<script src="/static/js/locker.js?v=1773255695"></script>
+<script src="/static/js/network.js?v=1773255695"></script>
+<script src="/static/js/chat.js?v=1773255695"></script>
+<script src="/static/js/perform_analysis.js?v=2"></script>
+<script src="/static/js/rag_analysis.js?v=1"></script>
+<script src="/static/js/intelligence.js?v=1"></script>
+<script src="/static/js/rag_intelligence.js?v=1"></script>
+<script src="/static/js/timeseries.js?v=1"></script>
+<script src="/static/js/log_analyzer.js?v=1773255695"></script>
+<script src="/static/js/realtime.js?v=1776014125"></script>
+<script src="/static/js/alert_detail.js?v=1776054600"></script>
+<script src="/static/js/fr10_windows.js"></script>  <!-- FR10 Windows Integration -->
+<script src="/static/js/fr10_windows.js"></script>  <!-- FR10-01/02 Windows UI & Metrics -->
+<script src="/static/js/fr11_health.js"></script>  <!-- FR11 Windows System Health -->
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   Secure Eye Trust+ — REAL Alert System
+   Polls /api/live-alerts every 15s, no fake data ever.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ─── State ─────────────────────────────────────────────────── */
+window._alertsData    = [];   // raw from server
+window._dismissedIds  = new Set(); // dismissed by user this session
+window._alertFilter   = 'all';     // 'all' | 'critical' | 'warning' | 'info'
+window._alertOpen     = false;
+window._alertTimer    = null;
+window._alertLoading  = false;
+
+/* ─── Toggle panel ───────────────────────────────────────────── */
+window.toggleAlertPanel = function() {
+  window._alertOpen = !window._alertOpen;
+  const panel = document.getElementById('alert-panel');
+  if (!panel) return;
+  panel.classList.toggle('open', window._alertOpen);
+  if (window._alertOpen) {
+    // Hide badge when opened
+    const b = document.getElementById('alert-badge-count');
+    if (b) b.classList.add('hidden');
+    // ✅ Clear realtime notification unread count (v2)
+    window.clearUnreadNotifCount?.();
+  }
+};
+
+// Close on outside click
+document.addEventListener('click', function(e) {
+  if (!window._alertOpen) return;
+  const panel = document.getElementById('alert-panel');
+  const btn   = document.getElementById('alert-topbar-btn');
+  if (panel && btn && !panel.contains(e.target) && !btn.contains(e.target)) {
+    window._alertOpen = false;
+    panel.classList.remove('open');
+  }
+});
+
+/* ─── Fetch real alerts from backend ────────────────────────── */
+window.refreshAlerts = async function() {
+  if (window._alertLoading) return;
+  window._alertLoading = true;
+  const refreshBtn = document.querySelector('.alert-refresh-btn');
+  if (refreshBtn) refreshBtn.textContent = '⟳ Refreshing…';
+
+  try {
+    const res  = await fetch('/api/live-alerts');
+    const data = await res.json();
+    window._alertsData = (data.alerts || []).filter(a => !window._dismissedIds.has(a.id));
+    window._renderAlerts();
+    window._updateBell();
+    const ts = document.getElementById('alert-last-updated');
+    if (ts) ts.textContent = new Date().toLocaleTimeString();
+    // Update connection badge to Live
+    const badge = document.getElementById('realtime-badge');
+    if (badge) { badge.textContent = '● Live'; badge.classList.remove('offline'); badge.classList.add('online'); }
+  } catch(e) {
+    console.warn('Alert fetch failed:', e.message);
+    const badge = document.getElementById('realtime-badge');
+    if (badge) { badge.textContent = '⚪ Offline'; badge.classList.remove('online'); badge.classList.add('offline'); }
+  } finally {
+    window._alertLoading = false;
+    if (refreshBtn) refreshBtn.textContent = '↻ Refresh now';
+  }
+};
+
+/* ─── Render alerts into panel ───────────────────────────────── */
+window._renderAlerts = function() {
+  const list   = document.getElementById('alert-list');
+  const summary= document.getElementById('alert-panel-summary');
+  const titleDot = document.getElementById('alert-title-dot');
+  if (!list) return;
+
+  const all      = window._alertsData;
+  const critical = all.filter(a => a.type === 'critical');
+  const warnings = all.filter(a => a.type === 'warning');
+  const infos    = all.filter(a => a.type === 'info');
+
+  // Update pill counts
+  const setCount = (id, n) => { const el = document.getElementById(id); if (el) el.textContent = n; };
+  setCount('acount-critical', critical.length);
+  setCount('acount-warning',  warnings.length);
+  setCount('acount-info',     infos.length);
+
+  // Title dot
+  if (titleDot) titleDot.classList.toggle('has-alerts', all.length > 0);
+
+  // Summary footer
+  if (summary) {
+    if (all.length === 0)       summary.textContent = '✅ System healthy — no issues found';
+    else if (critical.length)   summary.textContent = critical.length + ' critical · ' + warnings.length + ' warnings';
+    else                        summary.textContent = warnings.length + ' warning' + (warnings.length !== 1 ? 's' : '');
+  }
+
+  // Determine which to show based on filter
+  let toShow = all;
+  if (window._alertFilter !== 'all') toShow = all.filter(a => a.type === window._alertFilter);
+
+  // Render
+  if (all.length === 0) {
+    list.innerHTML = [
+      '<div class="alert-healthy-state">',
+      '  <div class="alert-healthy-shield">🛡️</div>',
+      '  <div class="alert-healthy-title">System Secure</div>',
+      '  <div class="alert-healthy-sub">All monitored systems are operating normally.<br>No threats, errors, or anomalies detected.</div>',
+      '  <div class="alert-healthy-stats">',
+      '    <div class="alert-healthy-stat">✅ Logs clean</div>',
+      '    <div class="alert-healthy-stat">✅ CPU normal</div>',
+      '    <div class="alert-healthy-stat">✅ No threats</div>',
+      '  </div>',
+      '</div>',
+    ].join('');
+    return;
+  }
+
+  if (toShow.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:12px">No ' + window._alertFilter + ' alerts</div>';
+    return;
+  }
+
+  list.innerHTML = toShow.map(function(a, i) {
+    const age = _alertAge(a.ts);
+    return [
+      '<div class="alert-card ' + a.type + '" id="acard-' + a.id + '" data-alert-id="' + a.id + '" style="animation-delay:' + (i*0.04) + 's">',
+      '  <div class="alert-card-bar"></div>',
+      '  <div class="alert-card-body">',
+      '    <div class="alert-card-top">',
+      '      <div class="alert-card-left">',
+      '        <div class="alert-card-icon">' + (a.icon || '⚠') + '</div>',
+      '        <div class="alert-card-text">',
+      '          <div class="alert-card-title">' + a.title + '</div>',
+      '          <div class="alert-card-detail">' + a.detail + '</div>',
+      '        </div>',
+      '      </div>',
+      '      <button type="button" class="alert-card-dismiss" onclick="event.stopPropagation();window.dismissAlert(' + JSON.stringify(a.id) + ')" title="Dismiss">✕</button>',
+      '    </div>',
+      '    <div class="alert-card-footer">',
+      '      <div class="alert-card-source">',
+      '        <div class="alert-card-source-dot"></div>',
+      '        <span class="alert-cat-tag ' + (a.category||'logs') + '">' + (a.category||'system').toUpperCase() + '</span>',
+      '        &nbsp;' + a.source,
+      '      </div>',
+      '      <div class="alert-card-time">' + age + '</div>',
+      '    </div>',
+      '  </div>',
+      '</div>',
+    ].join('');
+  }).join('');
+
+  list.querySelectorAll('.alert-card-dismiss').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      const card = btn.closest('.alert-card');
+      const id = card?.dataset.alertId || (card?.id || '').replace('acard-','');
+      if (id) window.dismissAlert(id);
+    });
+  });
+};
+
+function _alertAge(ts) {
+  if (!ts) return 'now';
+  const diff = Math.floor(Date.now()/1000) - ts;
+  if (diff < 60)  return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  return Math.floor(diff/3600) + 'h ago';
+}
+
+/* ─── Update bell icon state ─────────────────────────────────── */
+window._updateBell = function() {
+  const btn   = document.getElementById('alert-topbar-btn');
+  const badge = document.getElementById('alert-badge-count');
+  const all   = window._alertsData;
+
+  if (!btn || !badge) return;
+
+  btn.classList.remove('has-critical','has-warning');
+  badge.classList.remove('hidden','warning-only','info-only');
+
+  if (all.length === 0) {
+    badge.classList.add('hidden');
+    return;
+  }
+
+  const critical = all.filter(a => a.type === 'critical').length;
+  const warnings = all.filter(a => a.type === 'warning').length;
+
+  badge.textContent = all.length;
+  if (critical > 0) {
+    btn.classList.add('has-critical');
+  } else if (warnings > 0) {
+    btn.classList.add('has-warning');
+    badge.classList.add('warning-only');
+  } else {
+    badge.classList.add('info-only');
+  }
+
+  // Don't show badge if panel is open
+  if (window._alertOpen) badge.classList.add('hidden');
+};
+
+/* ─── Dismiss single alert ───────────────────────────────────── */
+window.dismissAlert = function(id) {
+  window._dismissedIds.add(id);
+  window._alertsData = window._alertsData.filter(a => a.id !== id);
+  // Animate out
+  const card = document.getElementById('acard-' + id);
+  if (card) {
+    card.style.transition = 'all .2s ease';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(30px)';
+    setTimeout(function() { window._renderAlerts(); window._updateBell(); }, 200);
+  } else {
+    window._renderAlerts();
+    window._updateBell();
+  }
+};
+
+/* ─── Dismiss all ────────────────────────────────────────────── */
+window.dismissAllAlerts = function() {
+  window._alertsData.forEach(a => window._dismissedIds.add(a.id));
+  window._alertsData = [];
+  window._renderAlerts();
+  window._updateBell();
+};
+
+/* ─── Filter by severity pill ────────────────────────────────── */
+window.filterAlerts = function(type) {
+  window._alertFilter = window._alertFilter === type ? 'all' : type;
+  // Update pill active states
+  ['critical','warning','info'].forEach(function(t) {
+    const el = document.getElementById('apill-' + t);
+    if (!el) return;
+    el.classList.toggle('active', window._alertFilter === 'all' || window._alertFilter === t);
+  });
+  window._renderAlerts();
+};
+
+/* ─── Start polling + SSE push ──────────────────────────────── */
+window._startAlertPolling = function() {
+  window.refreshAlerts(); // immediate
+  if (window._alertTimer) clearInterval(window._alertTimer);
+  window._alertTimer = setInterval(window.refreshAlerts, 15000);
+
+  // UPGRADE: also connect to real-time AlertBus SSE stream
+  // This gives instant push without waiting 15s
+  window._connectAlertBusSSE();
+};
+
+window._alertBusES = null;
+window._connectAlertBusSSE = function() {
+  if (window._alertBusES) return;
+  try {
+    var es = new EventSource('/api/alerts/stream');
+    window._alertBusES = es;
+
+    es.onopen = function() {
+      var badge = document.getElementById('realtime-badge');
+      if (badge) { badge.textContent = '● Live'; badge.classList.remove('offline'); badge.classList.add('online'); }
+    };
+
+    es.onmessage = function(evt) {
+      try {
+        var alert = JSON.parse(evt.data);
+        if (alert.type === 'heartbeat') {
+          var badge = document.getElementById('realtime-badge');
+          if (badge) { badge.textContent = '● Live'; badge.classList.remove('offline'); badge.classList.add('online'); }
+          return;
+        }
+
+        // Convert AlertBus format to the existing alert panel format
+        var severity = (alert.severity || '').toUpperCase();
+        var panelType = severity === 'CRITICAL' ? 'critical'
+                      : severity === 'HIGH'     ? 'warning'
+                      : 'info';
+
+        var existing = window._alertsData.find(function(a){ return a.id === alert.id; });
+        if (existing) return; // already in list
+
+        var panelAlert = {
+          id:       alert.id || Date.now(),
+          type:     panelType,
+          category: alert.category || 'security',
+          icon:     severity === 'CRITICAL' ? '🚨' : severity === 'HIGH' ? '⚠️' : '🔵',
+          title:    alert.name || alert.label || alert.title || alert.type || 'Alert',
+          detail:   (alert.description || alert.message || '').substring(0, 120),
+          source:   alert.source || alert.category || 'System',
+          ts:       Math.floor(Date.now() / 1000),
+          value:    alert.risk_score || 0,
+        };
+
+        window._alertsData.unshift(panelAlert);
+        // Keep cap at 200
+        if (window._alertsData.length > 200) window._alertsData.pop();
+
+        window._renderAlerts();
+        window._updateBell();
+
+        // Play a sound for CRITICAL
+        if (severity === 'CRITICAL' || severity === 'HIGH') {
+          window._alertPlaySound(severity);
+        }
+
+        // Update status badge to Live
+        var badge = document.getElementById('realtime-badge');
+        if (badge) { badge.textContent = '● Live'; badge.classList.remove('offline'); badge.classList.add('online'); }
+
+      } catch(e) {}
+    };
+
+    es.onerror = function() {
+      window._alertBusES = null;
+      var badge = document.getElementById('realtime-badge');
+      if (badge) { badge.textContent = '⚪ Offline'; badge.classList.remove('online'); badge.classList.add('offline'); }
+      setTimeout(window._connectAlertBusSSE, 15000); // reconnect after 15s
+    };
+  } catch(e) {}
+};
+
+window._alertPlaySound = function(severity) {
+  try {
+    var ctx  = new (window.AudioContext || window.webkitAudioContext)();
+    var osc  = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = severity === 'CRITICAL' ? 880 : 660;
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch(e) {}
+};
+
+/* ─── Upload ─────────────────────────────────────────────────── */
+async function uploadFile() {
+  var fi    = document.getElementById('upload-file');
+  var catEl = document.getElementById('upload-cat');
+  var cat   = catEl ? catEl.value : 'application';
+  var btn   = document.getElementById('upload-submit-btn');
+  if (!fi || !fi.files.length) { toast('Select a file first'); return; }
+
+  var file = fi.files[0];
+  if (btn) { btn.disabled = true; btn.textContent = 'Uploading & Analyzing…'; }
+  document.getElementById('upload-scan-results').style.display = 'none';
+
+  try {
+    // Build ONE FormData and send to BOTH endpoints using the same File object
+    var form1 = new FormData();
+    form1.append('file', file);
+    form1.append('category', cat);
+
+    var form2 = new FormData();
+    form2.append('file', file);
+
+    // Send both in parallel
+    var results = await Promise.all([
+      fetch('/api/upload',         { method: 'POST', body: form1 }).then(function(r){ return r.json(); }),
+      fetch('/api/analyze-upload', { method: 'POST', body: form2 }).then(function(r){ return r.json(); })
+    ]);
+
+    var d1 = results[0];
+    var d2 = results[1];
+
+    if (!d2.ok) {
+      toast('Stored ' + (d1.inserted||0) + ' lines. Analysis error: ' + (d2.error||'could not parse'));
+      return;
+    }
+
+    d2.filename = file.name;
+    d2.category = cat;
+    d2.inserted = d1.inserted || 0;
+    window._uploadScanData = d2;
+
+    _renderUploadResults(d2, file.name, cat, d1.inserted || 0);
+  } catch(e) {
+    toast('Upload failed: ' + e.message);
+    console.error('uploadFile error:', e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '📤 Upload'; }
+  }
+}
+
+function _renderUploadResults(d, filename, cat, inserted) {
+  var el = function(id) { return document.getElementById(id); };
+  var set = function(id, v) { var e = el(id); if(e) e.textContent = v; };
+
+  el('upload-scan-results').style.display = 'block';
+  el('upload-scan-results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  set('up-filename', filename + ' (' + inserted + ' lines stored)');
+  set('up-cat-label', cat);
+  set('up-total', (d.total||0).toLocaleString());
+
+  var lc = d.level_counts || {};
+  set('up-critical', (lc.CRITICAL||0).toLocaleString());
+  set('up-errors',   ((lc.ERROR||0)+(lc.FAILURE||0)).toLocaleString());
+  set('up-warnings', (lc.WARNING||0).toLocaleString());
+  set('up-info',     ((lc.INFO||0)+(lc.SUCCESS||0)).toLocaleString());
+
+  // Risk badge
+  var riskColors = { Low:'#4ade80', Medium:'#fcd34d', High:'#fb923c', Critical:'#f87171' };
+  var rc = riskColors[d.risk_label] || '#94a3b8';
+  var rb = el('up-risk-badge');
+  if (rb) {
+    rb.textContent = d.risk_label + ' Risk · ' + d.risk_score + '/100';
+    rb.style.cssText = 'background:' + rc + '18;color:' + rc + ';border:1px solid ' + rc + '44;padding:6px 16px;border-radius:20px;font-size:13px;font-weight:700';
+  }
+
+  // Findings
+  var icons = { critical:'🔴', error:'🟠', warning:'🟡', info:'🔵' };
+  var findEl = el('up-findings');
+  if (findEl) {
+    if (d.findings && d.findings.length) {
+      findEl.innerHTML = d.findings.map(function(f) {
+        return '<div class="az-finding az-finding-' + f.type + '"><span>' + (icons[f.type]||'•') + '</span><span>' + f.text + '</span></div>';
+      }).join('');
+    } else {
+      findEl.innerHTML = '<div style="color:var(--text-dim);font-size:13px">✅ No major issues detected</div>';
+    }
+  }
+
+  // Charts
+  _upBuildLevelChart(d.level_counts);
+  _upBuildTimelineChart(d.timeline);
+  _upBuildHourlyChart(d.hourly);
+
+  // Errors table
+  var errEl = el('up-errors-table');
+  if (errEl) {
+    if (d.top_errors && d.top_errors.length) {
+      errEl.innerHTML = d.top_errors.map(function(e) {
+        var cls = e.level === 'CRITICAL' ? '#f87171' : '#fb923c';
+        return '<div class="az-err-row"><span class="az-err-badge" style="background:' + cls + '18;color:' + cls + '">' + e.level + '</span><span class="az-err-ts">' + e.ts + '</span><span class="az-err-msg">' + e.message.replace(/</g,'&lt;') + '</span></div>';
+      }).join('');
+    } else {
+      errEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:10px">No errors found</div>';
+    }
+  }
+
+  // Sources
+  var srcEl = el('up-sources');
+  if (srcEl && d.top_sources && d.top_sources.length) {
+    var max = d.top_sources[0].count;
+    srcEl.innerHTML = d.top_sources.map(function(s) {
+      return '<div class="az-src-row"><span class="az-src-name">' + s.source + '</span><div class="az-src-bar-wrap"><div class="az-src-bar" style="width:' + Math.round(s.count/max*100) + '%"></div></div><span class="az-src-count">' + s.count + '</span></div>';
+    }).join('');
+  }
+}
+
+var _upChart1=null, _upChart2=null, _upChart3=null;
+
+function _upBuildLevelChart(lc) {
+  var ctx = document.getElementById('up-chart-level');
+  if (!ctx) return;
+  if (_upChart1) { _upChart1.destroy(); _upChart1 = null; }
+  lc = lc || {};
+  _upChart1 = new Chart(ctx, {
+    type: 'doughnut',
+    data: { labels: ['Critical','Error','Warning','Info'],
+      datasets: [{ data: [lc.CRITICAL||0,(lc.ERROR||0)+(lc.FAILURE||0),lc.WARNING||0,(lc.INFO||0)+(lc.SUCCESS||0)],
+        backgroundColor:['#f87171','#fb923c','#fcd34d','#4ade80'], borderWidth:0, hoverOffset:6 }] },
+    options: { cutout:'65%', plugins:{ legend:{ position:'bottom', labels:{ color:'#8faac8', font:{size:11}, padding:8 } } } }
+  });
+}
+
+function _upBuildTimelineChart(timeline) {
+  var ctx = document.getElementById('up-chart-timeline');
+  if (!ctx || !timeline || !timeline.length) return;
+  if (_upChart2) { _upChart2.destroy(); _upChart2 = null; }
+  _upChart2 = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: timeline.map(function(t){return t.date;}),
+      datasets: [{ label:'Entries', data: timeline.map(function(t){return t.count;}),
+        backgroundColor:'#1a8cff44', borderColor:'#1a8cff', borderWidth:1, borderRadius:4 }] },
+    options: { plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#4a6080',maxTicksLimit:8},grid:{color:'#1a2540'}},
+               y:{ticks:{color:'#4a6080'},grid:{color:'#1a2540'},beginAtZero:true} } }
+  });
+}
+
+function _upBuildHourlyChart(hourly) {
+  var ctx = document.getElementById('up-chart-hourly');
+  if (!ctx || !hourly || !hourly.length) return;
+  if (_upChart3) { _upChart3.destroy(); _upChart3 = null; }
+  var maxVal = Math.max.apply(null, hourly.map(function(h){return h.count;})) || 1;
+  _upChart3 = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: hourly.map(function(h){return h.hour;}),
+      datasets: [{ label:'Activity', data: hourly.map(function(h){return h.count;}),
+        backgroundColor: hourly.map(function(h){ var p=h.count/maxVal; return p>0.7?'#ef444488':p>0.4?'#f59e0b88':'#1a8cff44'; }),
+        borderColor:     hourly.map(function(h){ var p=h.count/maxVal; return p>0.7?'#ef4444':p>0.4?'#f59e0b':'#1a8cff'; }),
+        borderWidth:1, borderRadius:2 }] },
+    options: { plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{color:'#4a6080',maxRotation:0,maxTicksLimit:12},grid:{color:'#1a2540'}},
+               y:{ticks:{color:'#4a6080'},grid:{color:'#1a2540'},beginAtZero:true} } }
+  });
+}
+
+async function uploadDownloadPDF() {
+  var d = window._uploadScanData;
+  if (!d) { toast('No scan data — please upload a file first'); return; }
+  var btn = document.getElementById('up-pdf-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating PDF…'; }
+  try {
+    var r = await fetch('/api/upload-report-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(d)
+    });
+    if (!r.ok) {
+      var errText = '';
+      try { var errJson = await r.json(); errText = errJson.error || r.status; }
+      catch(e2) { errText = r.status + ' ' + r.statusText; }
+      toast('PDF error: ' + errText);
+      console.error('PDF API error:', errText);
+      return;
+    }
+    var contentType = r.headers.get('Content-Type') || '';
+    var blob = await r.blob();
+    var ext  = contentType.includes('pdf') ? '.pdf' : '.html';
+    var base = (d.filename || 'report').replace(/\.[^.]+$/, '');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = base + '_scan_report' + ext;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ a.remove(); URL.revokeObjectURL(a.href); }, 2000);
+    toast('✅ Report downloaded!');
+  } catch(e) {
+    toast('PDF failed: ' + e.message);
+    console.error('uploadDownloadPDF error:', e);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⬇ Download PDF Report'; }
+  }
+}
+
+
+
+/* ─── Chat quick questions ───────────────────────────────────── */
+
+/* ─── Logout ───────────────────────────────────────────────────────────────────── */
+async function doLogout() {
+  await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  window.location.href = '/login';
+}
+
+/* ─── App start ──────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+  // Start real alert polling immediately — no fake data
+  window._startAlertPolling();
+  // Load dashboard
+  if (typeof loadDashboard === 'function') loadDashboard();
+
+  // ── FIX: If Perform Analysis nav item is already active (e.g. user
+  //    refreshed the page while on that tab), init it immediately so
+  //    the page is never blank. ──────────────────────────────────────
+  var navPerform = document.getElementById('nav-perform');
+  if (navPerform && navPerform.classList.contains('active')) {
+    if (typeof initPerformAnalysis === 'function') initPerformAnalysis();
+  }
+
+  // ── FIX: When perform page becomes visible (via CSS .active toggle),
+  //    call initPerformAnalysis in case showPage fires before scripts
+  //    are ready. Use MutationObserver as a safety net. ───────────────
+  var pagePerform = document.getElementById('page-perform');
+  if (pagePerform && typeof MutationObserver !== 'undefined') {
+    var _paObserver = new MutationObserver(function(mutations) {
+      mutations.forEach(function(m) {
+        if (m.type === 'attributes' && m.attributeName === 'class') {
+          if (pagePerform.classList.contains('active')) {
+            if (typeof initPerformAnalysis === 'function') {
+              setTimeout(initPerformAnalysis, 0);
+            }
+          }
+        }
+      });
+    });
+    _paObserver.observe(pagePerform, { attributes: true });
+  }
+});
+</script>
+
+<!-- ══ LOCKER MODAL ══ -->
+<div class="locker-modal-overlay" id="locker-modal" onclick="if(event.target===this)closeLockerModal()">
+  <div class="locker-modal-card">
+    <div class="locker-modal-header">
+      <div class="locker-modal-title">📁 Lock Folder</div>
+      <button class="locker-modal-close" onclick="closeLockerModal()">✕</button>
+    </div>
+    <div class="locker-modal-body">
+      <div class="form-group-locker">
+        <label class="locker-label">Display Name</label>
+        <input type="text" id="lock-name" class="locker-input" placeholder="e.g. Personal, Work Files">
+      </div>
+      <div class="form-group-locker">
+        <label class="locker-label">Folder Path</label>
+        <input type="text" id="lock-path" class="locker-input" placeholder="e.g. C:\Users\You\Desktop\Personal">
+        <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Paste the full folder path e.g. C:\Users\adann\Desktop\Personal</div>
+      </div>
+      <div class="form-group-locker">
+        <label class="locker-label">Password</label>
+        <input type="password" id="lock-password" class="locker-input" placeholder="Minimum 4 characters" onkeydown="if(event.key==='Enter')document.getElementById('lock-password2').focus()">
+      </div>
+      <div class="form-group-locker">
+        <label class="locker-label">Confirm Password</label>
+        <input type="password" id="lock-password2" class="locker-input" placeholder="Repeat password" onkeydown="if(event.key==='Enter')submitLockModal()">
+      </div>
+      <div id="locker-modal-msg" style="display:none;padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:12px"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn" style="flex:1" onclick="closeLockerModal()">Cancel</button>
+        <button class="btn btn-primary" style="flex:1" onclick="submitLockModal()">🔒 Lock It</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ UNLOCK MODAL ══ -->
+<div class="locker-modal-overlay" id="unlock-modal" onclick="if(event.target===this)closeUnlockModal()">
+  <div class="locker-modal-card" style="max-width:360px">
+    <div class="locker-modal-header">
+      <div class="locker-modal-title" id="unlock-modal-title">🔓 Unlock</div>
+      <button class="locker-modal-close" onclick="closeUnlockModal()">✕</button>
+    </div>
+    <div class="locker-modal-body">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:40px" id="unlock-modal-icon">🔒</div>
+        <div style="font-size:13px;color:var(--text-bright);font-weight:700;margin-top:8px" id="unlock-modal-name"></div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px" id="unlock-modal-path"></div>
+      </div>
+      <div class="form-group-locker">
+        <label class="locker-label">Password</label>
+        <input type="password" id="unlock-password" class="locker-input" placeholder="Enter lock password" onkeydown="if(event.key==='Enter')submitUnlock()">
+      </div>
+      <div id="unlock-modal-msg" style="display:none;padding:10px 12px;border-radius:8px;font-size:12px;margin-bottom:12px"></div>
+      <!-- Hidden webcam -->
+      <video id="unlock-cam-video" style="position:fixed;opacity:0;pointer-events:none;top:-9999px" autoplay playsinline muted></video>
+      <canvas id="unlock-cam-canvas" style="position:fixed;opacity:0;pointer-events:none;top:-9999px" width="320" height="240"></canvas>
+      <div style="display:flex;gap:10px">
+        <button class="btn" style="flex:1" onclick="closeUnlockModal()">Cancel</button>
+        <button class="btn btn-primary" style="flex:1" onclick="submitUnlock()">🔓 Unlock</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="/static/js/pa_quick_fixes.js"></script>
+<script src="/static/js/pa_fix_all.js"></script>  <!-- NEW: one-click Fix All button + dedup + System Secure state -->
+
+<script>
+// v3 patch: make alert cards clickable for detail popup
+(function patchAlertCards(){
+  var origRender = window._renderAlerts;
+  if(origRender) {
+    window._renderAlerts = function(){
+      origRender.apply(this,arguments);
+      setTimeout(function(){
+        document.querySelectorAll('.alert-card').forEach(function(card){
+          if(card._v3patched) return;
+          card._v3patched = true;
+          card.style.cursor = 'pointer';
+          card.addEventListener('click', function(e){
+            if(e.target.closest('.alert-card-dismiss')) return;
+            var id = card.getAttribute('data-alert-id') || card.id.replace('acard-','');
+            var alert = (window._alertsData||[]).find(function(a){ return String(a.id)===String(id); });
+            if(alert) window.openAlertDetail(alert);
+          });
+        });
+      }, 60);
+    };
+  }
+  // Also run once for initially rendered cards
+  setTimeout(function(){
+    document.querySelectorAll('.alert-card').forEach(function(card){
+      if(card._v3patched) return;
+      card._v3patched = true;
+      card.style.cursor = 'pointer';
+      card.addEventListener('click', function(e){
+        if(e.target.closest('.alert-card-dismiss')) return;
+        var id = card.getAttribute('data-alert-id') || card.id.replace('acard-','');
+        var alert = (window._alertsData||[]).find(function(a){ return String(a.id)===String(id); });
+        if(alert) window.openAlertDetail(alert);
+      });
+    });
+  }, 1000);
+})();
+</script>
+</body>
