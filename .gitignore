@@ -1,1 +1,4 @@
 /.env
+# Ignore generated database files
+database/*.db
+database/*.db.bak
